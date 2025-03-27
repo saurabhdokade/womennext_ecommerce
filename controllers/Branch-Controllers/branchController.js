@@ -1,4 +1,4 @@
-const branchModel = require("../models/branch");
+const branchModel = require("../../models/BranchModels/branch");
 const bcrypt = require("bcryptjs");
 
 const createBranch = async (req, res) => {

@@ -37,10 +37,7 @@ const branchSchema = new mongoose.Schema({
         required: true,
         match: [/^\d{6}$/, 'Please enter a valid 6-digit PIN code']
     },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+
+}, { timestamps: true });
 
 module.exports = mongoose.model('Branch', branchSchema);

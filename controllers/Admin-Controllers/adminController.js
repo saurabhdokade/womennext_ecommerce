@@ -1,6 +1,6 @@
-const Admin = require("../models/Admin");
+const Admin = require("../../models/AdminModels/Admin");
 const jwt = require("jsonwebtoken");
-const { sendPasswordResetEmail } = require("../utils/sendEmail");
+const { sendPasswordResetEmail } = require("../../utils/sendEmail");
 
 
 //register

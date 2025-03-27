@@ -1,68 +1,9 @@
-const DeliveryBoyModel = require("../models/DeliveryBoy");
+const DeliveryBoyModel = require("../../models/DeliveryBoyModels/DeliveryBoy");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
  
-const getAllDeliveryBoys = async (req, res) => {
-    try {
-        let { page, limit } = req.query;
- 
-        // Convert to number and set default values
-        page = parseInt(page) || 1;
-        limit = parseInt(limit) || 10;
-        const skip = (page - 1) * limit;
- 
-        // Get total count of documents
-        const totalDeliveryBoys = await DeliveryBoyModel.countDocuments();
- 
-        // Fetch paginated data and exclude the password field
-        const deliveryBoys = await DeliveryBoyModel.find().skip(skip).limit(limit);
- 
-        // Add serial number dynamically
-        const deliveryBoysWithSerial = deliveryBoys.map((boy, index) => ({
-            serialNo: skip + index + 1, // Serial number starts from (skip + 1)
-            ...boy.toObject(),
-        }));
- 
-        res.status(200).json({
-            success: true,
-            page,
-            limit,
-            totalPages: Math.ceil(totalDeliveryBoys / limit),
-            totalDeliveryBoys,
-            deliveryBoys: deliveryBoysWithSerial,
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ success: false, message: error.message });
-    }
-};
- 
-const getDeliveryBoyById = async (req, res) => {
-    try {
-        const { id } = req.params;
- 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res
-                .status(400)
-                .json({ success: false, message: "Invalid delivery boy ID." });
-        }
- 
-        const deliveryBoy = await DeliveryBoyModel.findById(id);
- 
-        if (!deliveryBoy) {
-            return res
-                .status(404)
-                .json({ success: false, message: "Delivery boy not found." });
-        }
- 
-        res.status(200).json({ success: true, deliveryBoy });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ success: false, message: error.message });
-    }
-};
- 
+//Add Delivery Boy
 const addDeliveryBoy = async (req, res) => {
     try {
         const { fullName, email, phoneNumber, userId, password, address, branch } =
@@ -134,7 +75,85 @@ const addDeliveryBoy = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+//Get All Delivery Boys
+const getAllDeliveryBoys = async (req, res) => {
+    try {
+        let { page = 1, limit = 10, search = "", branch, sortOrder } = req.query;
+        page = parseInt(page);
+        limit = parseInt(limit);
  
+        // Determine sorting order (default to no sorting if sortOrder is not provided)
+        let sortOption = {};
+        if (sortOrder === "asc" || sortOrder === "desc") {
+            sortOption.fullName = sortOrder === "desc" ? -1 : 1;
+        }
+ 
+        // Create a search filter
+        const searchFilter = {
+            $or: [
+                { fullName: { $regex: search, $options: "i" } },
+                { email: { $regex: search, $options: "i" } },
+                { userId: { $regex: search, $options: "i" } },
+            ],
+        };
+ 
+        if (branch) {
+            searchFilter.branch = branch;
+        }
+ 
+        const totalDeliveryBoys = await DeliveryBoyModel.countDocuments(searchFilter);
+        const deliveryBoys = await DeliveryBoyModel.find(searchFilter)
+            .sort(sortOption) // Apply sorting only if provided
+            .skip((page - 1) * limit)
+            .limit(limit);
+ 
+        const totalPages = Math.ceil(totalDeliveryBoys / limit);
+        const hasPrevious = page > 1;
+        const hasNext = page < totalPages;
+ 
+        res.status(200).json({
+            success: true,
+            totalDeliveryBoys,
+            totalPages,
+            currentPage: page,
+            previous: hasPrevious,
+            next: hasNext,
+            deliveryBoys,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+ 
+//Get Delivery Boy By Id
+const getDeliveryBoyById = async (req, res) => {
+    try {
+        const { id } = req.params;
+ 
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Invalid delivery boy ID." });
+        }
+ 
+        const deliveryBoy = await DeliveryBoyModel.findById(id);
+ 
+        if (!deliveryBoy) {
+            return res
+                .status(404)
+                .json({ success: false, message: "Delivery boy not found." });
+        }
+ 
+        res.status(200).json({ success: true, deliveryBoy });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+ 
+//Update Delivery Boy 
 const updateDeliveryBoy = async (req, res) => {
     try {
         const { id } = req.params;
@@ -210,6 +229,7 @@ const updateDeliveryBoy = async (req, res) => {
     }
 };
  
+//Delete Delivery Boy
 const deleteDeliveryBoy = async (req, res) => {
     try {
         const { id } = req.params;

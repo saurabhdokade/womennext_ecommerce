@@ -5,8 +5,8 @@ const {
     getDeliveryBoyById,
     updateDeliveryBoy,
     deleteDeliveryBoy,
-} = require("../controllers/deliveryController");
-const { upload } = require("../config/cloudinary");
+} = require("../../controllers/Delivery-Controllers/deliveryController");
+const { upload } = require("../../config/cloudinary");
 const router = express.Router();
  
 router.get("/getAllDeliveryBoys", getAllDeliveryBoys);

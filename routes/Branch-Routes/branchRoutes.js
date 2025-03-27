@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { createBranch, getAllBranches, getBranchById, updateBranch, deleteBranch } = require('../controllers/branchController');
+const { createBranch, getAllBranches, getBranchById, updateBranch, deleteBranch } = require('../../controllers/Branch-Controllers/branchController');
 
 // Branch Routes
 router.post('/createBranch', createBranch);
