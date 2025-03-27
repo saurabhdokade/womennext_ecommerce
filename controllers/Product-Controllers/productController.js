@@ -180,4 +180,25 @@ const deleteProductById = async (req, res) => {
     }
 };
  
-module.exports = {createProduct, getAllProducts, getProductById, updateProduct, deleteProductById}
+//get unique brands
+const getBrands = async (req, res) => {
+    try {
+        const brands = await ProductModel.distinct("brand");
+        res.status(200).json({ success: true, brands });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Fetch unique sizes
+const getSizes = async (req, res) => {
+    try {
+        const sizes = await ProductModel.distinct("size");
+        res.status(200).json({ success: true, sizes });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+module.exports = {createProduct, getAllProducts, getProductById, updateProduct, deleteProductById, getBrands, getSizes}

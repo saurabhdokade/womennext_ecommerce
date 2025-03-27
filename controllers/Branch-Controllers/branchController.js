@@ -89,13 +89,19 @@ const getAllBranches = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
+
     // Total count for pagination
     const totalBranches = await branchModel.countDocuments(query);
+    const totalPages = Math.ceil(totalBranches / limit);
+    const hasPrevious = page > 1;
+    const hasNext = page < totalPages;
 
     return res.status(200).json({
       totalBranches,
       totalPages: Math.ceil(totalBranches / limit),
       currentPage: page,
+      hasPrevious,
+      hasNext,
       branches,
     });
   } catch (error) {
@@ -160,6 +166,7 @@ const deleteBranch = async (req, res) => {
       .json({ message: "Internal Server Error", success: false, error: error.message });
   }
 };
+
 module.exports = {
   createBranch,
   getAllBranches,
