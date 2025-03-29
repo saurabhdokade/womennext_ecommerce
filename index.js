@@ -5,15 +5,28 @@ const cors = require("cors");
 
 
 
-//Importing Routes
-const adminRoute = require("./routes/Admin-Routes/adminRoutes"); 
-const branchRoute = require("./routes/Branch-Routes/branchRoutes");
-const deliveryBoyRoute = require("./routes/Delivery-Routes/deliveryRoutes");
-const bannerRoute = require("./routes/Banner-Routes/bannerRoutes");
-const productRoute = require("./routes/Product-Routes/productRoutes");
-const testimonialRoute = require("./routes/Testimonial-Routes/testimonialRoutes");
-const branchAdminProductRoute = require("./routes/Branch-Routes/branchAdminProductRoutes");
-const branchAdminDeliveryBoyRoute = require("./routes/Branch-Routes/branch-adminDeliveryBoyRoutes");
+//Importing All Adim Related Routes
+const adminRoute = require("./routes/SuperAdmin-Routes/Super-AdminRoutes"); 
+const branchRoute = require("./routes/SuperAdmin-Routes/branchRoutes");
+const deliveryBoyRoute = require("./routes/SuperAdmin-Routes/deliveryRoutes");
+const bannerRoute = require("./routes/SuperAdmin-Routes/bannerRoutes");
+const productRoute = require("./routes/SuperAdmin-Routes/productRoutes");
+const testimonialRoute = require("./routes/SuperAdmin-Routes/testimonialRoutes");
+const settingsRoute = require("./routes/SuperAdmin-Routes/SettingRoutes");
+const customerRoute = require("./routes/SuperAdmin-Routes/customerRoutes");
+
+
+
+
+
+
+//Importing All Branch Admin Related Routes
+const branchAdminRoute = require("./routes/BranchAdmin-Routes/branchAdminRoutes");
+const branchAdminProductRoute = require("./routes/BranchAdmin-Routes/branchAdminProductRoutes");
+const branchAdminDeliveryBoyRoute = require("./routes/BranchAdmin-Routes/branch-adminDeliveryBoyRoutes");
+
+//Importing All User Related Routes
+const userRoute = require("./routes/user-Routes/useRoutes");
 
 const app = express();
 
@@ -25,16 +38,23 @@ app.use(cors());
 connectDB();
 
 
-//Using Routes
-app.use("/api/admin",adminRoute);
+//Super Admin  Routes
+app.use("/api/superAdmin",adminRoute);
 app.use("/api/branch", branchRoute);
 app.use("/api/deliveryBoy", deliveryBoyRoute);
 app.use("/api/banner", bannerRoute);
 app.use("/api/products", productRoute);
 app.use("/api/testimonial", testimonialRoute);
-app.use("/api/branchAdmin", branchAdminProductRoute);
-app.use("/api/branchAdmin", branchAdminDeliveryBoyRoute);
+app.use("/api/customer", customerRoute);
 
+//Branch Admin Routes
+app.use("/api/branchAdmin", branchAdminRoute);
+app.use("/api/branchAdminProduct", branchAdminProductRoute);
+app.use("/api/branchAdminDeliveryBoy", branchAdminDeliveryBoyRoute);
+app.use("/api/settings", settingsRoute);
+
+//User Routes
+app.use("/api/user", userRoute);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
