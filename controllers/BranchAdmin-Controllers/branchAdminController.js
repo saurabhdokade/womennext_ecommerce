@@ -234,7 +234,7 @@ const register = async (req, res) => {
         return res.status(400).json({ message: "Passwords do not match." });
       }
   
-      const admin = await branchAdmin.findById(id);
+      const admin = await BranchAdmin.findById(id);
       if (!admin) {
         return res.status(404).json({ message: "Admin not found." });
       }

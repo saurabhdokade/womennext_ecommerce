@@ -4,41 +4,36 @@ const Settings = require("../../models/SuperAdminModels/Settings");
 const createSettings = async (req, res) => {
   try {
     const {
-      emergencyDeliveryFee,
+      emergencyDeliveryFee = 0,
       settingType,
-      termsAndConditions,
-      privacyPolicy,
-      aboutUs,
-      referAndEarn,
+      termsAndConditions = [],
+      privacyPolicy = [],
+      aboutUs = [],
+      referAndEarn = [],
     } = req.body;
 
-    let aboutUsImages = [];
-    let referAndEarnImages = [];
-
-    if (req.files) {
-      if (req.files.aboutUsImages) {
-        aboutUsImages = req.files.aboutUsImages.map((file) => file.path);
-      }
-      if (req.files.referAndEarnImages) {
-        referAndEarnImages = req.files.referAndEarnImages.map(
-          (file) => file.path
-        );
-      }
+    if (!settingType?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Setting type is required",
+      });
     }
+
+    // Ensure descriptions are arrays of strings
+    const formatDescription = (input) => {
+      if (Array.isArray(input)) return input; // Already an array of strings
+      if (typeof input === "string") return [input]; // Convert single string to array
+      if (typeof input === "object" && input?.description) return input.description; // Extract array from object
+      return []; // Default to empty array if none of the above match
+    };
 
     const newSettings = new Settings({
       emergencyDeliveryFee,
       settingType,
-      termsAndConditions,
-      privacyPolicy,
-      aboutUs: {
-        description: aboutUs?.description || [],
-        images: aboutUsImages,
-      },
-      referAndEarn: {
-        description: referAndEarn?.description || [],
-        images: referAndEarnImages,
-      },
+      termsAndConditions: { description: formatDescription(termsAndConditions) },
+      privacyPolicy: { description: formatDescription(privacyPolicy) },
+      aboutUs: { description: formatDescription(aboutUs) },
+      referAndEarn: { description: formatDescription(referAndEarn) },
     });
 
     await newSettings.save();
@@ -49,18 +44,20 @@ const createSettings = async (req, res) => {
       settings: newSettings,
     });
   } catch (error) {
-    console.error("Error creating settings:", error);
+    console.error("Error creating settings:", error.message);
     return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
+      message: "Failed to create settings. Please try again later.",
+      error: error.message,
     });
   }
 };
 
+
 //Get Settings
 const getSettings = async (req, res) => {
   try {
-    const settings = await Settings.find();
+    const settings = await Settings.findOne();
 
     res.status(200).json(settings || {});
   } catch (error) {

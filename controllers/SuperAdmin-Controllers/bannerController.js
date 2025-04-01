@@ -1,6 +1,7 @@
 const Banner = require("../../models/SuperAdminModels/banner");
 const { cloudinary } = require("../../config/cloudinary");
 
+//Add Banner
 const addBanner = async (req, res) => { 
   try {
       const { category, status } = req.body;
@@ -67,8 +68,8 @@ const addBanner = async (req, res) => {
 };
 
  
-
-const getBanners = async (req, res) => {
+//Get all banners
+const getAllBanners = async (req, res) => {
   try {
     let query = req.query.query || ""; 
     let limit = parseInt(req.query.limit) || 4;
@@ -184,4 +185,4 @@ const getDropdownStatusOptions = async (req,res)=>{
     }
 }
 
-module.exports = {addBanner, getBanners, updateBanner, deleteBanner, getDropdownCategoryOptions, getDropdownStatusOptions}
+module.exports = {addBanner, getAllBanners, updateBanner, deleteBanner, getDropdownCategoryOptions, getDropdownStatusOptions}
