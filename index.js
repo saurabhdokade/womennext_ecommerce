@@ -20,13 +20,18 @@ const customerRoute = require("./routes/SuperAdmin-Routes/customerRoutes");
 
 
 
+
+
 //Importing All Branch Admin Related Routes
 const branchAdminRoute = require("./routes/BranchAdmin-Routes/branchAdminRoutes");
 const branchAdminProductRoute = require("./routes/BranchAdmin-Routes/branchAdminProductRoutes");
 const branchAdminDeliveryBoyRoute = require("./routes/BranchAdmin-Routes/branch-adminDeliveryBoyRoutes");
+const branchSettingsRoute = require("./routes/BranchAdmin-Routes/branchSettingsRoutes");
 
 //Importing All User Related Routes
 const userRoute = require("./routes/user-Routes/useRoutes");
+const userProductRoute = require("./routes/user-Routes/userProductRoutes");
+const cartRoute = require("./routes/user-Routes/CartRoutes");
 
 const app = express();
 
@@ -47,14 +52,18 @@ app.use("/api/products", productRoute);
 app.use("/api/testimonial", testimonialRoute);
 app.use("/api/customer", customerRoute);
 
+
 //Branch Admin Routes
 app.use("/api/branchAdmin", branchAdminRoute);
 app.use("/api/branchAdminProduct", branchAdminProductRoute);
 app.use("/api/branchAdminDeliveryBoy", branchAdminDeliveryBoyRoute);
 app.use("/api/settings", settingsRoute);
+app.use("/api/branchSettings", branchSettingsRoute);
 
 //User Routes
 app.use("/api/user", userRoute);
+app.use("/api/user/Product", userProductRoute);
+app.use("/api/user/cart", cartRoute);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
