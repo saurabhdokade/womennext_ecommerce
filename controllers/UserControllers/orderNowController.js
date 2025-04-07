@@ -97,14 +97,14 @@ const ongoingOrder = async (req, res) => {
         }
  
         if (order.status === "Ongoing") {
-            return res.status(400).json({ message: "Order is already ongoing." });
+            return res.status(400).json({ message: "Order is already Ongoing..." });
         }
  
         order.status = "Ongoing";
         await order.save();
  
         return res.status(200).json({
-            message: "Order ongoing successfully",
+            message: "Order is Currently Ongoing....",
             order: order
         });
  
@@ -215,7 +215,8 @@ const getViewOrderDetails = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found." });
     }
 
-    res.status(200).json({
+   return  res.status(200).json({
+    message: "View Order Details reterived successfully",
       success: true,
       order: {
         id: order._id,
@@ -243,7 +244,7 @@ const getViewOrderDetails = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching order details:", error);
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+   return  res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
 

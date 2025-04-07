@@ -1,18 +1,20 @@
 const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
+const Order = require("../../models/UserModels/orderNow");
 const mongoose = require("mongoose");
  
+//Get All Delivery Boys
 const getAllDeliveryBoys = async (req, res) => {
     try {
         let { page = 1, limit = 10, search = "", sortOrder } = req.query;
         page = parseInt(page);
         limit = parseInt(limit);
- 
+
         // Determine sorting order (default to no sorting if sortOrder is not provided)
         let sortOption = {};
         if (sortOrder === "asc" || sortOrder === "desc") {
             sortOption.fullName = sortOrder === "desc" ? -1 : 1;
         }
- 
+
         // Create a search filter
         const searchFilter = {
             $or: [
@@ -21,19 +23,20 @@ const getAllDeliveryBoys = async (req, res) => {
                 { userId: { $regex: search, $options: "i" } },
             ],
         };
- 
+
         const totalDeliveryBoys = await DeliveryBoyModel.countDocuments(
             searchFilter
         );
         const deliveryBoys = await DeliveryBoyModel.find(searchFilter)
+            .select("image fullName phoneNumber userId")
             .sort(sortOption) // Apply sorting only if provided
             .skip((page - 1) * limit)
             .limit(limit);
- 
+
         const totalPages = Math.ceil(totalDeliveryBoys / limit);
         const hasPrevious = page > 1;
         const hasNext = page < totalPages;
- 
+
         res.status(200).json({
             success: true,
             totalDeliveryBoys,
@@ -49,29 +52,154 @@ const getAllDeliveryBoys = async (req, res) => {
     }
 };
  
+//Get Delivery Boy By ID
 const getDeliveryBoyById = async (req, res) => {
-    try {
-        const { id } = req.params;
- 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res
-                .status(400)
-                .json({ success: false, message: "Invalid delivery boy ID." });
-        }
- 
-        const deliveryBoy = await DeliveryBoyModel.findById(id);
- 
-        if (!deliveryBoy) {
-            return res
-                .status(404)
-                .json({ success: false, message: "Delivery boy not found." });
-        }
- 
-        res.status(200).json({ success: true, deliveryBoy });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ success: false, message: error.message });
-    }
+  try {
+      const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+          return res.status(400).json({ success: false, message: "Invalid delivery boy ID." });
+      }
+
+      // Fetch delivery boy basic info
+      const deliveryBoy = await DeliveryBoyModel.findById(id).select("image fullName gender address phoneNumber email");
+
+      if (!deliveryBoy) {
+          return res.status(404).json({ success: false, message: "Delivery boy not found." });
+      }
+
+      // Fetch latest 3 orders
+      const latestOrders = await Order.find({ deliveryBoy: id })
+          .sort({ createdAt: -1 })
+          .limit(3)
+          .populate({
+              path: "items.product",
+              model: "Products",
+              select: "productName"
+          });
+
+      const formattedOrders = [];
+
+      latestOrders.forEach(order => {
+          const orderDate = new Date(order.orderDate).toLocaleDateString('en-IN');
+
+          const deliveryAddress = [
+              order.deliveryAddress?.name,
+              order.deliveryAddress?.street,
+              order.deliveryAddress?.city,
+              order.deliveryAddress?.zipCode
+          ].filter(Boolean).join(', ');
+
+          order.items.forEach(item => {
+              formattedOrders.push({
+                  Date: orderDate,
+                  productName: item.product?.productName || "Unknown Product",
+                  quantity: item.quantity,
+                  price: item.price,
+                  totalPrice: item.quantity * item.price,
+                  deliveryAddress
+              });
+          });
+      });
+
+      return res.status(200).json({
+          success: true,
+          deliveryBoy,
+          latestOrders: formattedOrders
+      });
+
+  } catch (error) {
+      console.error("Error fetching delivery boy details:", error);
+      return res.status(500).json({ success: false, message: error.message });
+  }
 };
+
+// Helper function to parse DD/MM/YYYY into a Date object
+const parseDate = (dateStr) => {
+  const [day, month, year] = dateStr.split('/');
+  return new Date(`${year}-${month}-${day}`);
+};
+
+const getOrderDetailsByDeliveryBoyId = async (req, res) => {
+  try {
+      const { id } = req.params;
+      let { page = 1, limit = 10, fromDate, toDate } = req.query;
+
+      page = parseInt(page);
+      limit = parseInt(limit);
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+          return res.status(400).json({ success: false, message: "Invalid delivery boy ID." });
+      }
+
+      // Build filter object
+      const filter = { deliveryBoy: id };
+      if (fromDate && toDate) {
+          const parsedFromDate = parseDate(fromDate);
+          const parsedToDate = parseDate(toDate);
+          filter.orderDate = {
+              $gte: parsedFromDate,
+              $lte: new Date(parsedToDate.setHours(23, 59, 59, 999))
+          };
+      }
+
+      // Total orders count
+      const totalOrders = await Order.countDocuments(filter);
+
+      // Fetch orders with pagination
+      const orders = await Order.find(filter)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .populate({
+              path: "items.product",
+              model: "Products",
+              select: "productName"
+          });
+
+      // Flatten and format response
+      const formattedOrders = [];
+
+      orders.forEach(order => {
+          const orderDate = new Date(order.orderDate).toLocaleDateString('en-IN');
+
+          const deliveryAddress = [
+              order.deliveryAddress?.name,
+              order.deliveryAddress?.street,
+              order.deliveryAddress?.city,
+              order.deliveryAddress?.zipCode
+          ].filter(Boolean).join(', ');
+
+          order.items.forEach(item => {
+              formattedOrders.push({
+                  Date: orderDate,
+                  productName: item.product?.productName || "Unknown Product",
+                  quantity: item.quantity,
+                  price: item.price,
+                  totalPrice: item.quantity * item.price,
+                  deliveryAddress: deliveryAddress
+              });
+          });
+      });
+
+      const totalPages = Math.ceil(totalOrders / limit);
+      const hasPrevious = page > 1;
+      const hasNext = page < totalPages;
+
+      return res.status(200).json({
+          success: true,
+          totalPages,
+          currentPage: page,
+          previous: hasPrevious,
+          next: hasNext,
+          orders: formattedOrders
+      });
+
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, message: error.message });
+  }
+};
+  
  
 module.exports = { getAllDeliveryBoys, getDeliveryBoyById };

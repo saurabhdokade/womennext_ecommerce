@@ -117,7 +117,7 @@ const getBranchById = async (req, res) => {
     const { id } = req.params;
 
     // Step 1: Find the branch
-    const branch = await branchModel.findById(id).lean();
+    const branch = await branchModel.findById(id).select("phoneNumber servicePinCode fullAddress");
     if (!branch) {
       return res.status(404).json({ message: "Branch not found", success: false });
     }
@@ -131,8 +131,8 @@ const getBranchById = async (req, res) => {
       userId: boy.userId,
       deliveryBoyName: boy.fullName,
       emailAddress: boy.email,
-      phoneNumber: boy.phoneNumber,
-      address: boy.address,
+      PhoneNumber: boy.phoneNumber,
+      Address: boy.address,
     }));
 
     // Step 3: Get products (you can apply branch filter if you have branchId in products)
@@ -141,6 +141,7 @@ const getBranchById = async (req, res) => {
       .lean();
 
     const formattedProducts = products.map((product) => ({
+      id:product._id,
       productCode: product.productCode,
       brand: product.brand,
       productName: product.productName,

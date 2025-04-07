@@ -1,4 +1,5 @@
 const { Schema, model } = require("mongoose");
+const mongoose = require("mongoose");
  
 const userSchema = new Schema(
     {
@@ -17,7 +18,7 @@ const userSchema = new Schema(
         },
         gender: {
             type: String,
-            enum: ["Male", "Female", "Other"],
+            enum: ["Male", "Female", "Others"],
         },
         email: {
             type: String,
@@ -33,6 +34,11 @@ const userSchema = new Schema(
         otpExpiresAt: {
             type: Date,
         },
+        branchInfo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Branches",
+            required: false
+          },
     },
     { timestamps: true }
 );

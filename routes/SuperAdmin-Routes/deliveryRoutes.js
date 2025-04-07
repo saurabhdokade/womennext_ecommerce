@@ -9,9 +9,10 @@ const {
 const { upload } = require("../../config/cloudinary");
 const router = express.Router();
  
+
+router.post("/addDeliveryBoy", upload.single("image"), addDeliveryBoy);
 router.get("/getAllDeliveryBoys", getAllDeliveryBoys);
 router.get("/getDeliveryBoyById/:id", getDeliveryBoyById);
-router.post("/addDeliveryBoy", upload.single("image"), addDeliveryBoy);
 router.put(
     "/updateDeliveryBoy/:id",
     upload.single("image"),

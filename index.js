@@ -5,11 +5,12 @@ const cors = require("cors");
 
 
 
-//Importing All Adim Related Routes
-const adminRoutes = require("./routes/SuperAdmin-Routes/Super-AdminRoutes"); 
+//Importing All superAdmin Related Routes
+const superAdminRoutes = require("./routes/SuperAdmin-Routes/Super-AdminRoutes"); 
 const branchRoutes = require("./routes/SuperAdmin-Routes/branchRoutes");
 const deliveryBoyRoutes = require("./routes/SuperAdmin-Routes/deliveryRoutes");
 const bannerRoutes = require("./routes/SuperAdmin-Routes/bannerRoutes");
+const dashboardRoutes = require("./routes/SuperAdmin-Routes/dashboardRoutes");
 const productRoutes = require("./routes/SuperAdmin-Routes/productRoutes");
 const testimonialRoutes = require("./routes/SuperAdmin-Routes/testimonialRoutes");
 const settingsRoutes = require("./routes/SuperAdmin-Routes/SettingRoutes");
@@ -23,9 +24,12 @@ const superAdminOrderRoutes = require("./routes/SuperAdmin-Routes/superAdminOrde
 
 //Importing All Branch Admin Related Routes
 const branchAdminRoutes = require("./routes/BranchAdmin-Routes/branchAdminRoutes");
+const branchDetailsRoutes = require("./routes/BranchAdmin-Routes/branchDetailsRoutes");
 const branchAdminProductRoutes = require("./routes/BranchAdmin-Routes/branchAdminProductRoutes");
 const branchAdminDeliveryBoyRoutes = require("./routes/BranchAdmin-Routes/branch-adminDeliveryBoyRoutes");
 const branchSettingsRoutes = require("./routes/BranchAdmin-Routes/branchSettingsRoutes");
+const branchOrderRoutes = require("./routes/BranchAdmin-Routes/branch-adminOrder");
+
 
 
 
@@ -49,7 +53,7 @@ connectDB();
 
 
 //Super Admin  Routes
-app.use("/api/superAdmin",adminRoutes);
+app.use("/api/superAdmin",superAdminRoutes);
 app.use("/api/branch", branchRoutes);
 app.use("/api/deliveryBoy", deliveryBoyRoutes);
 app.use("/api/banner", bannerRoutes);
@@ -57,14 +61,17 @@ app.use("/api/products", productRoutes);
 app.use("/api/testimonial", testimonialRoutes);
 app.use("/api/customer", customerRoutes);
 app.use("/api/order", superAdminOrderRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/settings", settingsRoutes);
 
 
 //Branch Admin Routes
 app.use("/api/branchAdmin", branchAdminRoutes);
+app.use("/api/branchAdmin", branchDetailsRoutes);
 app.use("/api/branchAdminProduct", branchAdminProductRoutes);
 app.use("/api/branchAdminDeliveryBoy", branchAdminDeliveryBoyRoutes);
-app.use("/api/settings", settingsRoutes);
 app.use("/api/branchSettings", branchSettingsRoutes);
+app.use("/api/branchOrder", branchOrderRoutes);
 
 //User Routes
 app.use("/api/user", userRoutes);

@@ -1,6 +1,7 @@
 const Cart = require("../../models/UserModels/CartModel")
 const Product = require('../../models/SuperAdminModels/Product');
 const Order = require("../../models/UserModels/orderNow");
+const branchModel = require("../../models/SuperAdminModels/branch");
 //Add Item  To Cart
 const addToCart = async (req, res) => {
     try {
@@ -140,66 +141,109 @@ const decrementCartItem = async (req, res) => {
   };
  
   // Craete Order From Cart
- const BuyOrderFromCart = async (req, res) => {
+  const BuyOrderFromCart = async (req, res) => {
     try {
-      const userId = req.user.id; 
+      const userId = req.user.id;
   
-      const cart = await Cart.findOne({ userId }).populate('items.productId');
-      
-      if (!cart) {
-        // console.log("Cart not found for user:", userId);
-        return res.status(400).json({ message: "Cart does not exist. Add products first." });
-      }
-      
-      if (cart.items.length === 0) {
-        // console.log("Cart is empty for user:", userId);
-        return res.status(400).json({ message: "Cart is empty. Add products to cart first." });
+      const cart = await Cart.findOne({ userId }).populate("items.productId");
+  
+      if (!cart || cart.items.length === 0) {
+        return res.status(400).json({ message: "Cart is empty. Add products first." });
       }
   
-    //   console.log("Cart found:", cart);
+      const {
+        deliveryBoy,
+        branchName,
+        deliveryAddress,
+        paymentMethod,
+        emergencyDelivery,
+        
+      } = req.body;
+  
+      const emergency = emergencyDelivery === "true" || emergencyDelivery === true;
   
       let totalAmount = 0;
       let orderItems = [];
+      let insufficientStockProducts = [];
   
       for (const item of cart.items) {
         const product = item.productId;
+  
         if (!product) {
-          console.log("Product not found in cart for item:", item);
           return res.status(400).json({ message: "One of the products in your cart is missing." });
+        }
+  
+        if (product.stock < item.quantity) {
+          insufficientStockProducts.push(product.productName || product.name);
+          continue;
         }
   
         totalAmount += item.quantity * item.price;
         orderItems.push({
           product: product._id,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
         });
   
-        if (product.stock < item.quantity) {
-          return res.status(400).json({ message: `Not enough stock for ${product.name}` });
-        }
         product.stock -= item.quantity;
         await product.save();
       }
   
-
+      if (insufficientStockProducts.length > 0) {
+        return res.status(400).json({
+          message: `Not enough stock for: ${insufficientStockProducts.join(", ")}`,
+        });
+      }
+  
+      if (emergency) totalAmount += 20;
+  
+      // Branch detection logic
+      let branchInfo = null;
+  
+      if (branchName) {
+        const branch = await branchModel.findOne({ branchName });
+        if (branch) {
+          branchInfo = branch._id;
+        } else {
+          return res.status(404).json({
+            message: `Branch with name "${branchName}" not found.`,
+          });
+        }
+      } else {
+        const allBranches = await branchModel.find();
+        const addressString = typeof deliveryAddress === "string" ? deliveryAddress : JSON.stringify(deliveryAddress);
+        const matchedBranch = allBranches.find((branch) => {
+          const pins = Array.isArray(branch.servicePinCode)
+            ? branch.servicePinCode.map(code => code.toString())
+            : [branch.servicePinCode?.toString()];
+          return pins.some(pin => addressString.includes(pin)) ||
+                 addressString.includes(branch.fullAddress);
+        });
+  
+        if (matchedBranch) {
+          branchInfo = matchedBranch._id;
+        }
+      }
+  
       const newOrder = new Order({
         user: userId,
-        deliveryAddress: req.body.deliveryAddress,
-        paymentMethod: req.body.paymentMethod,
-        totalAmount: totalAmount,
-        emergencyDelivery: req.body.emergencyDelivery,
-        deliveryCharges: req.body.emergencyDelivery ? 20 : 0,
-        items: orderItems
+        deliveryBoy,
+        branchInfo,
+        deliveryAddress,
+        paymentMethod,
+        totalAmount,
+        emergencyDelivery: emergency,
+        deliveryCharges: emergency ? 20 : 0,
+        items: orderItems,
       });
-
-      await newOrder.save();
   
+      await newOrder.save();
       await Cart.findOneAndDelete({ userId });
   
       return res.status(201).json({
         message: "Order placed successfully",
-        order: newOrder
+        order: newOrder,
+        emergencyDelivery: emergency ? "₹20 Emergency Delivery Charges applied" : "No Emergency Delivery Charges"
       });
   
     } catch (error) {
@@ -207,6 +251,7 @@ const decrementCartItem = async (req, res) => {
       return res.status(500).json({ message: "Server error", error: error.message });
     }
   };
+  
   
   // Save for later
   const saveForLater = async (req, res) => {
@@ -318,6 +363,12 @@ const moveToCart = async (req, res) => {
     }
   };
  
+  
+
+
+
+
+
   module.exports = {
     addToCart,
     incrementCartItem,

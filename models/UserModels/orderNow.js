@@ -29,6 +29,7 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+
   items: [
     {
       product: { type: mongoose.Schema.Types.ObjectId, ref: "Products", required: true },
@@ -44,7 +45,17 @@ const orderSchema = new mongoose.Schema({
   orderDate: {
     type: Date,
     default: Date.now
-  }
+  },
+  deliveryBoy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "DeliveryBoy", 
+    required: true
+  },
+  branchInfo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Branches",
+    required: true
+  },
 }, { timestamps: true });
  
 const Order = mongoose.model("OrderCart", orderSchema);

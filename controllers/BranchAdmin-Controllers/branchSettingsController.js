@@ -12,6 +12,8 @@ const getSettings = async (req, res) => {
       aboutUs:{
         description:settings.aboutUs?.description
       },
+     
+   
       referAndEarn:{
         description:settings.referAndEarn?.description
       }

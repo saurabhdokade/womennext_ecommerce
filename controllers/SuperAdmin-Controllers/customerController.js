@@ -35,9 +35,11 @@ const getAllCustomers = async (req, res) => {
  
             const formattedCustomers = customers.map((customer) => ({
                 _id: customer._id,
+                fullName: {
+                    image: customer.image,
+                    name: customer.fullName,
+                  },
                 phoneNumber: customer.phoneNumber,
-                fullName: customer.fullName,
-                image: customer.image,
                 fullAddress: customer.address, 
               }));
         return res.status(200).json({
@@ -57,53 +59,54 @@ const getAllCustomers = async (req, res) => {
  
 //Get Customer by ID
 const getCustomerById = async (req, res) => {
-    try {
-      const { userId } = req.params;
+  try {
+    const { userId } = req.params;
     //   console.log("Incoming ID:", userId);
-  
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid customer ID." });
-      }
-  
-      const customer = await userModel.findById(userId);
-      if (!customer) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Customer not found" });
-      }
-  
 
-      const orders = await Order.find({ user: userId }).populate("items.product");
-  
-      const formattedProducts = orders.flatMap(order =>
-        order.items.map(item => ({
-          date: new Date(order.createdAt).toLocaleDateString("en-IN"),
-          productName: item.product?.productName || "N/A",
-          Quantity: item.quantity,
-          price: item.price,
-          totalPrice: item.quantity * item.price,
-        }))
-      );
-  
-      return res.status(200).json({
-        success: true,
-        customerDetails: {
-          fullName: customer.fullName,
-          phoneNumber: customer.phoneNumber,
-          gender: customer.gender,
-          fullAddress: customer.address,
-          image: customer.image,
-        },
-        availableProducts: formattedProducts,
-      });
-  
-    } catch (error) {
-      console.log("Error in getCustomerById:", error);
-      return res.status(500).json({ success: false, message: error.message });
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid customer ID." });
     }
-  };
+
+    const customer = await userModel.findById(userId);
+    if (!customer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found" });
+    }
+
+
+    const orders = await Order.find({ user: userId }).populate("items.product");
+
+    const formattedProducts = orders.flatMap(order =>
+      order.items.map(item => ({
+        date: new Date(order.createdAt).toLocaleDateString("en-IN"),
+        productName: item.product?.productName || "N/A",
+        Quantity: item.quantity,
+        price: item.price,
+        totalPrice: item.quantity * item.price,
+      }))
+    );
+
+    return res.status(200).json({
+      success: true,
+      customerDetails: {
+        image: customer.image,
+        fullName: customer.fullName,
+        phoneNumber: customer.phoneNumber,
+        gender: customer.gender,
+        fullAddress: customer.address,
+        
+      },
+      previousOrderDetails: formattedProducts,
+    });
+
+  } catch (error) {
+    console.log("Error in getCustomerById:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
   
  
 //Update Customer
@@ -151,15 +154,15 @@ const updateCustomer = async (req, res) => {
 //Delete Customer
 const deleteCustomer = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { userId } = req.params;
  
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res
                 .status(400)
                 .json({ success: false, message: "Invalid customer ID." });
         }
  
-        const customer = await userModel.findByIdAndDelete(id);
+        const customer = await userModel.findByIdAndDelete(userId);
         if (!customer) {
             return res
                 .status(404)
@@ -176,7 +179,7 @@ const deleteCustomer = async (req, res) => {
 //DropDown Api For Genders
 const getAllGenders = async (req, res) => {
     try {
-        const genders = ["Male", "Female", "Other"];
+        const genders = ["Male", "Female", "Others"];
         return res.status(200).json({ success: true, genders });
     } catch (error) {
         console.log(error);

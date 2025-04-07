@@ -1,8 +1,7 @@
 const BranchAdmin = require('../../models/BranchAdminModels/branchAdmin')
 const jwt  =  require('jsonwebtoken')
-const bcrypt = require('bcryptjs')
 const {sendPasswordResetEmail}  = require("../../utils/sendEmail");
-const branchAdmin = require('../../models/BranchAdminModels/branchAdmin');
+
  
 // Register Branch Admin
 const register = async (req, res) => { 

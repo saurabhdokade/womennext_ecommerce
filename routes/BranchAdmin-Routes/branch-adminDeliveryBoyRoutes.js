@@ -2,7 +2,7 @@ const express = require("express");
 const {
     getAllDeliveryBoys,
     getDeliveryBoyById,
-} = require("../../controllers/BranchAdmin-Controllers/branchAdminDeliveryBoyController");
+} = require("../../controllers/branchAdmin-Controllers/branchAdminDeliveryBoyController");
 const router = express.Router();
  
 // Delivery Boy Routes
