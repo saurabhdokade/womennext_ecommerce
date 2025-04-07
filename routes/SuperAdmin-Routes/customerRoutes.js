@@ -7,13 +7,15 @@ const {
     updateCustomer,
     getCustomerById,
     deleteCustomer,
+    getAllGenders,
 } = require("../../controllers/SuperAdmin-Controllers/customerController");
  
 const router = express.Router();
  
 router.get("/getAllCustomers", getAllCustomers);
-router.get("/getCustomer/:id", getCustomerById);
-router.put("/updateCustomer/:id", upload.single("image"), updateCustomer);
-router.delete("/deleteCustomer/:id", deleteCustomer);
+router.get("/getCustomer/:userId", getCustomerById);
+router.put("/updateCustomer/:userId", upload.single("image"), updateCustomer);
+router.delete("/deleteCustomer/:userId", deleteCustomer);
+router.get("/getAllGenders", getAllGenders);
  
 module.exports = router;

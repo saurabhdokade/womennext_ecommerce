@@ -5,6 +5,7 @@ const {
     resendOtp,
     getUser,
     updateUser,
+    logout,
 } = require("../../controllers/UserControllers/userController");
 const { userValidateToken } = require("../../middlewares/userAuthMiddleware");
 const { upload } = require("../../config/cloudinary");
@@ -23,5 +24,6 @@ router.put(
     upload.single("image"),
     updateUser
 );
+router.post("/logout", userValidateToken, logout);
  
 module.exports = router;

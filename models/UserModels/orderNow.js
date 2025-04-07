@@ -38,14 +38,14 @@ const orderSchema = new mongoose.Schema({
   ],
   status: {
     type: String,
-    enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+    enum: ["Pending", "Delivered","Ongoing", "Cancelled", "Confirmed"],
     default: "Pending"
   },
   orderDate: {
     type: Date,
     default: Date.now
   }
-});
+}, { timestamps: true });
  
 const Order = mongoose.model("OrderCart", orderSchema);
  

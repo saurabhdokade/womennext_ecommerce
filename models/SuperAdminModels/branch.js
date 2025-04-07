@@ -6,7 +6,7 @@ const branchSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    branchPersonName: {
+    branchManagerName: {
         type: String,
         required: true,
         trim: true
@@ -33,10 +33,16 @@ const branchSchema = new mongoose.Schema({
         required: true
     },
     servicePinCode: {
-        type: String,
+        type: [String], // Array of strings
         required: true,
-        match: [/^\d{6}$/, 'Please enter a valid 6-digit PIN code']
-    },
+        validate: {
+            validator: function (v) {
+                return v.every(code => /^\d{6}$/.test(code));
+            },
+            message: 'Each PIN code must be a valid 6-digit number'
+        }
+    }
+    
 
 }, { timestamps: true });
 

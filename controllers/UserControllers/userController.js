@@ -2,6 +2,7 @@ const { client, twilioPhone } = require("../../config/twilo");
 const jwt = require("jsonwebtoken");
 const userModel = require("../../models/UserModels/User");
  
+//Login
 const login = async (req, res) => {
     try {
         const { phoneNumber } = req.body;
@@ -39,6 +40,7 @@ const login = async (req, res) => {
     }
 };
  
+//Verify OTP
 const verifyOtp = async (req, res) => {
     try {
         const { phoneNumber, otp } = req.body;
@@ -76,6 +78,7 @@ const verifyOtp = async (req, res) => {
     }
 };
  
+//Resend OTP
 const resendOtp = async (req, res) => {
     try {
         const { phoneNumber } = req.body;
@@ -110,6 +113,7 @@ const resendOtp = async (req, res) => {
     }
 };
  
+//Get User
 const getUser = async (req, res) => {
     try {
         const user = await userModel
@@ -128,6 +132,7 @@ const getUser = async (req, res) => {
     }
 };
  
+//Update User
 const updateUser = async (req, res) => {
     try {
         const { fullName, phoneNumber, gender, email, address } =
@@ -162,7 +167,17 @@ const updateUser = async (req, res) => {
     }
 };
  
-module.exports = { login, verifyOtp, resendOtp, getUser, updateUser };
+//logout
+const logout = async (req, res) => {
+    try {
+      res.clearCookie("token");
+      res.status(200).json({ message: "Logout successful", success: true });
+    } catch (error) {
+      console.error("Server Error:", error);
+      res.status(500).json({ message: "Server error", success: false, error: error.message });
+    }
+  };
+module.exports = { login, verifyOtp, resendOtp, getUser, updateUser, logout };
  
  
  

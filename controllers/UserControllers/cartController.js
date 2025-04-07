@@ -1,7 +1,6 @@
 const Cart = require("../../models/UserModels/CartModel")
-const Order = require("../../models/UserModels/Order.js");
 const Product = require('../../models/SuperAdminModels/Product');
- 
+const Order = require("../../models/UserModels/orderNow");
 //Add Item  To Cart
 const addToCart = async (req, res) => {
     try {
@@ -209,11 +208,123 @@ const decrementCartItem = async (req, res) => {
     }
   };
   
+  // Save for later
+  const saveForLater = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { productId } = req.params;
+  
+      const cart = await Cart.findOne({ userId });
+  
+      if (!cart) {
+        return res.status(404).json({ success: false, message: "Cart not found" });
+      }
+  
+      const itemIndex = cart.items.findIndex(
+        (item) => item.productId.toString() === productId
+      );
+  
+      if (itemIndex === -1) {
+        return res.status(404).json({ success: false, message: "Item not found in cart" });
+      }
+  
+      const itemToSave = cart.items[itemIndex];
+  
+      cart.items.splice(itemIndex, 1);
+  
+      cart.savedForLater.push(itemToSave);
+  
+      cart.totalAmount = cart.items.reduce(
+        (sum, item) => sum + item.quantity * item.price,
+        0
+      );
+  
+      await cart.save();
+  
+      res.status(200).json({
+        success: true,
+        message: "Item moved to Save For Later",
+        cart
+      });
+  
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    }
+  };
+ 
+  // Move to cart
+const moveToCart = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { productId } = req.params;
+  
+      const cart = await Cart.findOne({ userId });
+  
+      if (!cart) {
+        return res.status(404).json({
+          success: false,
+          message: "Cart not found",
+        });
+      }
+  
+      const savedItemIndex = cart.savedForLater.findIndex(
+        (item) => item.productId.toString() === productId
+      );
+  
+      if (savedItemIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          message: "Item not found in saved for later",
+        });
+      }
+  
+      const savedItem = cart.savedForLater[savedItemIndex];
+  
+      const existingCartItem = cart.items.find(
+        (item) => item.productId.toString() === productId
+      );
+  
+      if (existingCartItem) {
+        existingCartItem.quantity += savedItem.quantity;
+      } else {
+        cart.items.push({
+          productId: savedItem.productId,
+          quantity: savedItem.quantity,
+          price: savedItem.price,
+        });
+      }
+  
+      cart.savedForLater.splice(savedItemIndex, 1);
+  
+      cart.totalAmount = cart.items.reduce(
+        (sum, item) => sum + item.quantity * item.price,
+        0
+      );
+  
+      await cart.save();
+  
+      return res.status(200).json({
+        success: true,
+        message: "Item moved to cart",
+        cart,
+      });
+    } catch (error) {
+      console.error("Move to cart error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+        error: error.message,
+      });
+    }
+  };
+ 
   module.exports = {
     addToCart,
     incrementCartItem,
     decrementCartItem,
     removeFromCart,
     BuyOrderFromCart,
+    saveForLater,
+    moveToCart,
   };
   

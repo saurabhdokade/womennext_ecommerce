@@ -1,6 +1,8 @@
 const userModel = require("../../models/UserModels/User");
+const Order = require("../../models/UserModels/orderNow");
 const mongoose = require("mongoose");
  
+//Get All Customers
 const getAllCustomers = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = "" } = req.query;
@@ -26,11 +28,18 @@ const getAllCustomers = async (req, res) => {
  
         const customers = await userModel
             .find(query)
-            .select("-otp -otpExpiresAt")
+            .select("fullName image phoneNumber address")
             .skip((currentPage - 1) * pageLimit)
             .limit(pageLimit)
             .sort({ createdAt: -1 });
  
+            const formattedCustomers = customers.map((customer) => ({
+                _id: customer._id,
+                phoneNumber: customer.phoneNumber,
+                fullName: customer.fullName,
+                image: customer.image,
+                fullAddress: customer.address, 
+              }));
         return res.status(200).json({
             success: true,
             totalCustomers,
@@ -38,7 +47,7 @@ const getAllCustomers = async (req, res) => {
             currentPage,
             previous: hasPrevious,
             next: hasNext,
-            customers,
+            customers:formattedCustomers
         });
     } catch (error) {
         console.log(error);
@@ -46,47 +55,73 @@ const getAllCustomers = async (req, res) => {
     }
 };
  
- 
+//Get Customer by ID
 const getCustomerById = async (req, res) => {
     try {
-        const { id } = req.params;
- 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res
-                .status(400)
-                .json({ success: false, message: "Invalid customer ID." });
-        }
- 
-        const customer = await userModel.findById(id);
-        if (!customer) {
-            return res
-                .status(404)
-                .json({ success: false, message: "Customer not found" });
-        }
- 
-       return  res.status(200).json({ success: true, fullName: customer.fullName, phoneNumber: customer.phoneNumber, gender: customer.gender, email: customer.email, address: customer.address, image: customer.image });
+      const { userId } = req.params;
+    //   console.log("Incoming ID:", userId);
+  
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid customer ID." });
+      }
+  
+      const customer = await userModel.findById(userId);
+      if (!customer) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Customer not found" });
+      }
+  
+
+      const orders = await Order.find({ user: userId }).populate("items.product");
+  
+      const formattedProducts = orders.flatMap(order =>
+        order.items.map(item => ({
+          date: new Date(order.createdAt).toLocaleDateString("en-IN"),
+          productName: item.product?.productName || "N/A",
+          Quantity: item.quantity,
+          price: item.price,
+          totalPrice: item.quantity * item.price,
+        }))
+      );
+  
+      return res.status(200).json({
+        success: true,
+        customerDetails: {
+          fullName: customer.fullName,
+          phoneNumber: customer.phoneNumber,
+          gender: customer.gender,
+          fullAddress: customer.address,
+          image: customer.image,
+        },
+        availableProducts: formattedProducts,
+      });
+  
     } catch (error) {
-        console.log(error);
-       return  res.status(500).json({ success: false, message: error.message });
+      console.log("Error in getCustomerById:", error);
+      return res.status(500).json({ success: false, message: error.message });
     }
-};
+  };
+  
  
+//Update Customer
 const updateCustomer = async (req, res) => {
     try {
-        const { id } = req.params;
- 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        const { userId } = req.params;
+   
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res
                 .status(400)
                 .json({ success: false, message: "Invalid customer ID." });
         }
  
-        const { fullName, phoneNumber, gender, email, address } =
-            req.body;
+        const { fullName, phoneNumber, gender, email, address } = req.body;
         const image = req.file?.path;
  
         const customer = await userModel
-            .findById(id)
+            .findById(userId)
             .select("-otp -otpExpiresAt");
         if (!customer) {
             return res
@@ -113,6 +148,7 @@ const updateCustomer = async (req, res) => {
     }
 };
 
+//Delete Customer
 const deleteCustomer = async (req, res) => {
     try {
         const { id } = req.params;
@@ -137,10 +173,18 @@ const deleteCustomer = async (req, res) => {
     }
 };
  
-
-
+//DropDown Api For Genders
+const getAllGenders = async (req, res) => {
+    try {
+        const genders = ["Male", "Female", "Other"];
+        return res.status(200).json({ success: true, genders });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
  
  
-module.exports = { getAllCustomers, getCustomerById, updateCustomer, deleteCustomer };
+module.exports = { getAllCustomers, getCustomerById, updateCustomer, deleteCustomer, getAllGenders };
  
  

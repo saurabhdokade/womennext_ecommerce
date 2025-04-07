@@ -1,11 +1,14 @@
 const branchModel = require("../../models/SuperAdminModels/branch");
+const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
+const ProductModel = require("../../models/SuperAdminModels/Product");
 const bcrypt = require("bcryptjs");
 
+//Create Branch
 const createBranch = async (req, res) => {
   try {
     const {
       branchName,
-      branchPersonName,
+      branchManagerName,
       email,
       password,
       phoneNumber,
@@ -27,7 +30,7 @@ const createBranch = async (req, res) => {
     //Create new Branch
     const newBranch = new branchModel({
       branchName,
-      branchPersonName,
+      branchManagerName,
       email,
       password: hashedPassword,
       phoneNumber,
@@ -71,12 +74,8 @@ const getAllBranches = async (req, res) => {
       query = {
         $or: [
           { branchName: { $regex: searchQuery, $options: "i" } },
-          { branchPersonName: { $regex: searchQuery, $options: "i" } },
-          { email: { $regex: searchQuery, $options: "i" } },
-          { password: { $regex: searchQuery, $options: "i" } },
-          { phoneNumber: { $regex: searchQuery, $options: "i" } },
+          { branchManagerName: { $regex: searchQuery, $options: "i" } },
           { servicePinCode: { $regex: searchQuery, $options: "i" } },
-          { fullAddress: { $regex: searchQuery, $options: "i" } },
         ],
       };
     }
@@ -84,7 +83,7 @@ const getAllBranches = async (req, res) => {
     // Fetch branches with pagination
     const branches = await branchModel
       .find(query)
-      .select("+password") // Exclude password field for security
+      .select("branch branchManagerName servicePinCode") // Exclude password field for security
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(limit);
@@ -116,18 +115,59 @@ const getAllBranches = async (req, res) => {
 const getBranchById = async (req, res) => {
   try {
     const { id } = req.params;
-    const branch = await branchModel.findById(id);
+
+    // Step 1: Find the branch
+    const branch = await branchModel.findById(id).lean();
     if (!branch) {
-      return res.status(404).json({ message: "Branch not found" });
+      return res.status(404).json({ message: "Branch not found", success: false });
     }
-    return res.status(200).json({ message: "Branch found", success: true, branch });
+
+    // Step 2: Get delivery boys (you can apply filters if needed, like branch-wise)
+    const deliveryBoys = await DeliveryBoyModel.find({})
+      .select("userId fullName email phoneNumber address")
+      .lean();
+
+    const formattedDeliveryBoys = deliveryBoys.map((boy) => ({
+      userId: boy.userId,
+      deliveryBoyName: boy.fullName,
+      emailAddress: boy.email,
+      phoneNumber: boy.phoneNumber,
+      address: boy.address,
+    }));
+
+    // Step 3: Get products (you can apply branch filter if you have branchId in products)
+    const products = await ProductModel.find({})
+      .select("productCode brand productName size availableProductQuantity price")
+      .lean();
+
+    const formattedProducts = products.map((product) => ({
+      productCode: product.productCode,
+      brand: product.brand,
+      productName: product.productName,
+      size: product.size,
+      availableQuantity: product.availableProductQuantity,
+      price: product.price,
+    }));
+
+    // Step 4: Return everything in one response
+    return res.status(200).json({
+      success: true,
+      message: "Branch details fetched successfully",
+      branch,
+      availableDeliveryBoys: formattedDeliveryBoys,
+      availableProductDetails: formattedProducts,
+    });
+
   } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Internal Server Error", success: false, error: error.message });
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+      error: error.message,
+    });
   }
 };
+
 
 
 
@@ -135,35 +175,190 @@ const getBranchById = async (req, res) => {
 const updateBranch = async (req, res) => {
   try {
     const { id } = req.params;
-    const branch = await branchModel.findByIdAndUpdate(id, req.body, {
-      new: true,
-    });
-    if (!branch) {
-      return res.status(404).json({ message: "Branch not found" });
+
+    // Validate input
+    if (req.body.servicePinCode && !Array.isArray(req.body.servicePinCode)) {
+      return res.status(400).json({
+        message: "servicePinCode should be an array of 6-digit numbers",
+        success: false,
+      });
     }
-    return res.status(200).json({ message: "Branch updated successfully", success: true, branch });
+
+    // Fetch existing branch
+    const existingBranch = await branchModel.findById(id);
+
+    if (!existingBranch) {
+      return res.status(404).json({ message: "Branch not found", success: false });
+    }
+
+    // Merge servicePinCode arrays
+    if (req.body.servicePinCode) {
+      const updatedPins = req.body.servicePinCode;
+
+      // Merge & remove duplicates
+      const mergedPins = Array.from(new Set([...existingBranch.servicePinCode, ...updatedPins]));
+
+      req.body.servicePinCode = mergedPins;
+    }
+
+    // Update branch
+    const updatedBranch = await branchModel.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    return res.status(200).json({
+      message: "Branch updated successfully",
+      success: true,
+      branch: updatedBranch,
+    });
+
   } catch (error) {
     console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Internal Server Error", success: false, error: error.message });
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+      error: error.message,
+    });
   }
 };
+
+
 
 //Delete Branch
 const deleteBranch = async (req, res) => {
   try {
     const { id } = req.params;
-    const branch = await branchModel.findByIdAndDelete(id);
+    const { servicePinCode } = req.query;
+
+    const branch = await branchModel.findById(id);
     if (!branch) {
-      return res.status(404).json({ message: "Branch not found" });
+      return res.status(404).json({ message: "Branch not found", success: false });
     }
-    return res.status(200).json({ message: "Branch deleted successfully", success: true, branch });
+
+    // Handle pin code removal
+    if (servicePinCode) {
+      const normalizedPin = servicePinCode.trim();
+      const pinIndex = branch.servicePinCode.indexOf(normalizedPin);
+
+      if (pinIndex === -1) {
+        return res.status(404).json({
+          message: "Service pin code not found in this branch",
+          success: false,
+        });
+      }
+
+      branch.servicePinCode.splice(pinIndex, 1);
+      await branch.save();
+
+      return res.status(200).json({
+        message: `Service pin code ${normalizedPin} removed from branch successfully`,
+        success: true,
+        branch,
+      });
+    }
+
+    // Delete entire branch
+    await branchModel.findByIdAndDelete(id);
+    return res.status(200).json({
+      message: "Branch deleted successfully",
+      success: true,
+    });
+
   } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Internal Server Error", success: false, error: error.message });
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+
+// get Available Delivery Boys
+const availableDeliveryBoys = async (req, res) => {
+  try {
+    let { page = 1, limit = 10 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+ 
+    const totalCount = await DeliveryBoyModel.countDocuments({});
+ 
+    const deliveryBoys = await DeliveryBoyModel.find({})
+      .select("userId fullName email phoneNumber address")
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+ 
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasPrevious = page > 1;
+    const hasNext = page < totalPages;
+ 
+    // Map and rename fields
+    const formattedBoys = deliveryBoys.map((boy) => ({
+      userId: boy.userId,
+      deliveryBoyName: boy.fullName,
+      emailAddress: boy.email,
+      phoneNumber: boy.phoneNumber,
+      address: boy.address,
+    }));
+ 
+    res.status(200).json({
+      success: true,
+      totalPages,
+      currentPage: page,
+      previous: hasPrevious,
+      next: hasNext,
+      deliveryBoys: formattedBoys,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+ 
+// get available products
+const availableProducts = async (req, res) => {
+  try {
+    let { page = 1, limit = 10 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+ 
+    const totalCount = await ProductModel.countDocuments({});
+ 
+    const products = await ProductModel.find({})
+      .select(
+        "productCode brand productName size availableProductQuantity price"
+      )
+      .skip((page - 1) * limit)
+      .limit(limit);
+ 
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasPrevious = page > 1;
+    const hasNext = page < totalPages;
+ 
+    const formattedProducts = products.map((product) => ({
+      productCode: product.productCode,
+      brand: product.brand,
+      productName: product.productName,
+      size: product.size,
+      availableQuantity: product.availableProductQuantity,
+      price: product.price,
+    }));
+ 
+    res.status(200).json({
+      success: true,
+      totalPages,
+      currentPage: page,
+      previous: hasPrevious,
+      next: hasNext,
+      products: formattedProducts,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -173,4 +368,6 @@ module.exports = {
   getBranchById,
   updateBranch,
   deleteBranch,
+  availableDeliveryBoys,
+  availableProducts,
 };

@@ -20,7 +20,7 @@ router.put("/updateProduct/:id", upload.array("image", 5), updateProduct);
 router.delete("/deleteProductById/:id", deleteProductById);
 router.get("/getAllBrands", getBrands);
 router.get("/getAllSizes", getSizes);
-router.post("/addProductQuantity/:id", addProductQuantity);
-router.post("/removeProductQuantity/:id", removeProductQuantity);
+router.put("/addProductQuantity/:id", addProductQuantity);
+router.put("/removeProductQuantity/:id", removeProductQuantity);
  
 module.exports = router;
