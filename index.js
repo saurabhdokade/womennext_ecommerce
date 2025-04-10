@@ -29,6 +29,8 @@ const branchAdminProductRoutes = require("./routes/BranchAdmin-Routes/branchAdmi
 const branchAdminDeliveryBoyRoutes = require("./routes/BranchAdmin-Routes/branch-adminDeliveryBoyRoutes");
 const branchSettingsRoutes = require("./routes/BranchAdmin-Routes/branchSettingsRoutes");
 const branchOrderRoutes = require("./routes/BranchAdmin-Routes/branch-adminOrder");
+const branchAdminCustomerRoutes = require("./routes/BranchAdmin-Routes/branchAdminCustomerRoutes");
+
 
 
 
@@ -41,6 +43,7 @@ const userOrderRoutes = require("./routes/user-Routes/orderNow-Routes");
 const contactRoutes = require("./routes/user-Routes/conatctUs-Routes");
 const reviewRoutes = require("./routes/user-Routes/reviewRoutes");
 const userSettingsRoutes = require("./routes/user-Routes/userSettingsRoutes");
+const trackingOrderRoutes = require("./routes/user-Routes/TrackingOrder-Routes");
 
 const app = express();
 
@@ -72,6 +75,7 @@ app.use("/api/branchAdminProduct", branchAdminProductRoutes);
 app.use("/api/branchAdminDeliveryBoy", branchAdminDeliveryBoyRoutes);
 app.use("/api/branchSettings", branchSettingsRoutes);
 app.use("/api/branchOrder", branchOrderRoutes);
+app.use("/api/branchCustomer", branchAdminCustomerRoutes);
 
 //User Routes
 app.use("/api/user", userRoutes);
@@ -81,6 +85,7 @@ app.use("/api/user", userOrderRoutes);
 app.use("/api/user", contactRoutes);
 app.use("/api/user/review", reviewRoutes);
 app.use("/api/user/settings", userSettingsRoutes);
+app.use("/api/user", trackingOrderRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

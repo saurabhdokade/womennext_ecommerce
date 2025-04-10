@@ -152,12 +152,11 @@ const decrementCartItem = async (req, res) => {
       }
   
       const {
-        deliveryBoy,
         branchName,
+        deliveryBoy,
         deliveryAddress,
         paymentMethod,
         emergencyDelivery,
-        
       } = req.body;
   
       const emergency = emergencyDelivery === "true" || emergencyDelivery === true;
@@ -211,7 +210,9 @@ const decrementCartItem = async (req, res) => {
         }
       } else {
         const allBranches = await branchModel.find();
-        const addressString = typeof deliveryAddress === "string" ? deliveryAddress : JSON.stringify(deliveryAddress);
+        const addressString = typeof deliveryAddress === "string"
+          ? deliveryAddress
+          : JSON.stringify(deliveryAddress);
         const matchedBranch = allBranches.find((branch) => {
           const pins = Array.isArray(branch.servicePinCode)
             ? branch.servicePinCode.map(code => code.toString())
@@ -225,24 +226,41 @@ const decrementCartItem = async (req, res) => {
         }
       }
   
+      // Helper function for future date calculation
+      const getFutureTime = (days, hours) => new Date(Date.now() + (days * 24 + hours) * 60 * 60 * 1000);
+  
       const newOrder = new Order({
         user: userId,
-        deliveryBoy,
         branchInfo,
+        deliveryBoy,
         deliveryAddress,
         paymentMethod,
         totalAmount,
         emergencyDelivery: emergency,
         deliveryCharges: emergency ? 20 : 0,
         items: orderItems,
+        deliveryDate: getFutureTime(3, 0),
+        statusTimeline: {
+          orderPlaced: new Date(),
+          orderConfirmed: getFutureTime(0, 1),
+          packed: getFutureTime(0, 14),
+          arrivedAtWarehouse: getFutureTime(1, 14),
+          nearCourierFacility: getFutureTime(1, 15),
+          outForDelivery: getFutureTime(2, 14),
+          delivered: getFutureTime(2, 16)
+        }
       });
   
       await newOrder.save();
       await Cart.findOneAndDelete({ userId });
   
+      // Remove statusTimeline from response
+      const orderResponse = newOrder.toObject();
+      // delete orderResponse.statusTimeline;
+  
       return res.status(201).json({
         message: "Order placed successfully",
-        order: newOrder,
+        order: orderResponse,
         emergencyDelivery: emergency ? "₹20 Emergency Delivery Charges applied" : "No Emergency Delivery Charges"
       });
   
@@ -251,6 +269,7 @@ const decrementCartItem = async (req, res) => {
       return res.status(500).json({ message: "Server error", error: error.message });
     }
   };
+  
   
   
   // Save for later

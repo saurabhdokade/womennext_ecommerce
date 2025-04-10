@@ -77,11 +77,11 @@ const getCustomerById = async (req, res) => {
     }
 
 
-    const orders = await Order.find({ user: userId }).populate("items.product");
+    const orders = await Order.find({ user: userId, }).populate("items.product");
 
     const formattedProducts = orders.flatMap(order =>
       order.items.map(item => ({
-        date: new Date(order.createdAt).toLocaleDateString("en-IN"),
+        date: new Date(order.orderDate).toLocaleDateString("en-IN"),
         productName: item.product?.productName || "N/A",
         Quantity: item.quantity,
         price: item.price,

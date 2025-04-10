@@ -81,6 +81,78 @@ const getAllOrders = async (req, res) => {
     }
   };
 
+  const getOrderById = async (req, res) => {
+    try {
+      const { id } = req.params;
+   
+      const order = await Order.findById(id)
+        .populate({
+          path: "user",
+          select: "name phoneNumber email address",
+        })
+        .populate({
+          path: "branchInfo",
+          select: "branchName phoneNumber email",
+        })
+        .populate({
+          path: "items.product",
+          select:
+            "image productCode brand productName productSubType productDescription size",
+        });
+   
+      if (!order) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Order not found" });
+      }
+   
+      // Assuming one item, or using the first item for simplicity
+      const product = order.items[0]?.product;
+      const orderQuantity = order.items[0]?.quantity;
+      const price = order.items[0]?.price;
+   
+      const reason =
+        order.cancelReason === "Other"
+          ? order.otherReason || "NA"
+          : order.cancelReason || "NA";
+   
+      const response = {
+        orderId: order._id,
+        customerInfo: {
+          name: order.user?.name,
+          phoneNumber: order.user?.phoneNumber,
+          email: order.user?.email,
+          address: order.user?.address,
+        },
+        branchInfo: {
+          name: order.branchInfo?.branchName,
+          phoneNumber: order.branchInfo?.phoneNumber,
+          email: order.branchInfo?.email,
+        },
+        image: product?.image[0],
+        productCode: product?.productCode,
+        productBrand: product?.brand,
+        productName: product?.productName,
+        productSubType: product?.productSubType,
+        productDescription: product?.productDescription,
+        size: product?.size,
+        orderQuantity,
+        price,
+        deliveryType: order.emergencyDelivery || "NA",
+        grandTotal: order.totalAmount,
+        orderStatus: order.status,
+        paymentMode: order.paymentMethod,
+        reason,
+      };
+   
+      res.status(200).json({ success: true, order: response });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  };
+   
   module.exports = {
-    getAllOrders
+    getAllOrders,
+    getOrderById,
   }

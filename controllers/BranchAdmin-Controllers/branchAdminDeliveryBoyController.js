@@ -54,72 +54,92 @@ const getAllDeliveryBoys = async (req, res) => {
  
 //Get Delivery Boy By ID
 const getDeliveryBoyById = async (req, res) => {
-  try {
+    try {
       const { id } = req.params;
-
+  
+      // Step 1: Validate MongoDB ObjectId
       if (!mongoose.Types.ObjectId.isValid(id)) {
-          return res.status(400).json({ success: false, message: "Invalid delivery boy ID." });
+        return res.status(400).json({
+          success: false,
+          message: "Invalid delivery boy ID.",
+        });
       }
-
-      // Fetch delivery boy basic info
-      const deliveryBoy = await DeliveryBoyModel.findById(id).select("image fullName gender address phoneNumber email");
-
+  
+      // Step 2: Fetch Delivery Boy Details
+      const deliveryBoy = await DeliveryBoyModel.findById(id).select(
+        "image fullName gender address phoneNumber email"
+      );
+  
       if (!deliveryBoy) {
-          return res.status(404).json({ success: false, message: "Delivery boy not found." });
+        return res.status(404).json({
+          success: false,
+          message: "Delivery boy not found.",
+        });
       }
 
-      // Fetch latest 3 orders
-      const latestOrders = await Order.find({ deliveryBoy: id })
-          .sort({ createdAt: -1 })
-          .limit(3)
-          .populate({
-              path: "items.product",
-              model: "Products",
-              select: "productName"
-          });
-
+  
+     
+      const previousOrder = await Order.find({ 
+        deliveryBoy: id,
+        status: "Delivered",
+       })
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .populate({
+          path: "items.product",
+          model: "Products",
+          select: "productName",
+        });
+  
+      // Step 4: Format Order Details
       const formattedOrders = [];
-
-      latestOrders.forEach(order => {
-          const orderDate = new Date(order.orderDate).toLocaleDateString('en-IN');
-
-          const deliveryAddress = [
-              order.deliveryAddress?.name,
-              order.deliveryAddress?.street,
-              order.deliveryAddress?.city,
-              order.deliveryAddress?.zipCode
-          ].filter(Boolean).join(', ');
-
-          order.items.forEach(item => {
-              formattedOrders.push({
-                  Date: orderDate,
-                  productName: item.product?.productName || "Unknown Product",
-                  quantity: item.quantity,
-                  price: item.price,
-                  totalPrice: item.quantity * item.price,
-                  deliveryAddress
-              });
+  
+      previousOrder.forEach((order) => {
+        const orderDate = new Date(order.orderDate).toLocaleDateString("en-IN");
+  
+        const deliveryAddress = [
+          order.deliveryAddress?.name,
+          order.deliveryAddress?.street,
+          order.deliveryAddress?.city,
+          order.deliveryAddress?.zipCode,
+        ]
+          .filter(Boolean)
+          .join(", ");
+  
+        order.items.forEach((item) => {
+          formattedOrders.push({
+            id: order._id,
+            Date: orderDate,
+            productName: item.product?.productName || "Unknown Product",
+            quantity: item.quantity,
+            price: item.price,
+            totalPrice: item.quantity * item.price,
+            status: order.status,
+            deliveryAddress,
           });
+        });
       });
-
+  
+   
       return res.status(200).json({
-          success: true,
-          deliveryBoy,
-          latestOrders: formattedOrders
+        success: true,
+        deliveryBoy,
+        previousDeliveryDetails: formattedOrders,
       });
-
-  } catch (error) {
+    } catch (error) {
       console.error("Error fetching delivery boy details:", error);
-      return res.status(500).json({ success: false, message: error.message });
-  }
-};
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  };
+  
 
-// Helper function to parse DD/MM/YYYY into a Date object
-const parseDate = (dateStr) => {
-  const [day, month, year] = dateStr.split('/');
-  return new Date(`${year}-${month}-${day}`);
-};
 
+
+//Get Order Details By Delivery Boy ID
 const getOrderDetailsByDeliveryBoyId = async (req, res) => {
   try {
       const { id } = req.params;
@@ -202,4 +222,4 @@ const getOrderDetailsByDeliveryBoyId = async (req, res) => {
 };
   
  
-module.exports = { getAllDeliveryBoys, getDeliveryBoyById };
+module.exports = { getAllDeliveryBoys, getDeliveryBoyById, getOrderDetailsByDeliveryBoyId };
