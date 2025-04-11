@@ -5,7 +5,7 @@ const cors = require("cors");
 
 
 
-//Importing All superAdmin Related Routes
+//✅ Importing All superAdmin Related Routes
 const superAdminRoutes = require("./routes/SuperAdmin-Routes/Super-AdminRoutes"); 
 const branchRoutes = require("./routes/SuperAdmin-Routes/branchRoutes");
 const deliveryBoyRoutes = require("./routes/SuperAdmin-Routes/deliveryRoutes");
@@ -16,26 +16,28 @@ const testimonialRoutes = require("./routes/SuperAdmin-Routes/testimonialRoutes"
 const settingsRoutes = require("./routes/SuperAdmin-Routes/SettingRoutes");
 const customerRoutes = require("./routes/SuperAdmin-Routes/customerRoutes");
 const superAdminOrderRoutes = require("./routes/SuperAdmin-Routes/superAdminOrderRoutes");
+const notificationsRoutes = require("./routes/SuperAdmin-Routes/notficationsRoutes");
 
 
 
 
 
 
-//Importing All Branch Admin Related Routes
+//✅ Importing All Branch Admin Related Routes
 const branchAdminRoutes = require("./routes/BranchAdmin-Routes/branchAdminRoutes");
 const branchDetailsRoutes = require("./routes/BranchAdmin-Routes/branchDetailsRoutes");
 const branchAdminProductRoutes = require("./routes/BranchAdmin-Routes/branchAdminProductRoutes");
 const branchAdminDeliveryBoyRoutes = require("./routes/BranchAdmin-Routes/branch-adminDeliveryBoyRoutes");
 const branchSettingsRoutes = require("./routes/BranchAdmin-Routes/branchSettingsRoutes");
-const branchOrderRoutes = require("./routes/BranchAdmin-Routes/branch-adminOrder");
+const branchOrderRoutes = require("./routes/BranchAdmin-Routes/branch-adminOrderRoutes");
 const branchAdminCustomerRoutes = require("./routes/BranchAdmin-Routes/branchAdminCustomerRoutes");
+const branchNotificationsRoutes = require("./routes/BranchAdmin-Routes/branchAdminNotificationRoutes");
 
 
 
 
 
-//Importing All User Related Routes
+//✅ Importing All User Related Routes
 const userRoutes = require("./routes/user-Routes/useRoutes");
 const userProductRoutes = require("./routes/user-Routes/userProductRoutes");
 const cartRoutes = require("./routes/user-Routes/CartRoutes");
@@ -43,19 +45,20 @@ const userOrderRoutes = require("./routes/user-Routes/orderNow-Routes");
 const contactRoutes = require("./routes/user-Routes/conatctUs-Routes");
 const reviewRoutes = require("./routes/user-Routes/reviewRoutes");
 const userSettingsRoutes = require("./routes/user-Routes/userSettingsRoutes");
-const trackingOrderRoutes = require("./routes/user-Routes/TrackingOrder-Routes");
+const userNotificationsRoutes = require("./routes/user-Routes/userNotficationsRoutes");
+
 
 const app = express();
 
-// Middleware
+//✅ Middleware
 app.use(express.json());
 app.use(cors());
 
-// Connect to Database
+//✅ Connect to Database
 connectDB();
 
 
-//Super Admin  Routes
+//✅ Super Admin  Routes
 app.use("/api/superAdmin",superAdminRoutes);
 app.use("/api/branch", branchRoutes);
 app.use("/api/deliveryBoy", deliveryBoyRoutes);
@@ -66,9 +69,9 @@ app.use("/api/customer", customerRoutes);
 app.use("/api/order", superAdminOrderRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/notification", notificationsRoutes);
 
-
-//Branch Admin Routes
+//✅ Branch Admin Routes
 app.use("/api/branchAdmin", branchAdminRoutes);
 app.use("/api/branchAdmin", branchDetailsRoutes);
 app.use("/api/branchAdminProduct", branchAdminProductRoutes);
@@ -76,8 +79,9 @@ app.use("/api/branchAdminDeliveryBoy", branchAdminDeliveryBoyRoutes);
 app.use("/api/branchSettings", branchSettingsRoutes);
 app.use("/api/branchOrder", branchOrderRoutes);
 app.use("/api/branchCustomer", branchAdminCustomerRoutes);
+app.use("/api/branchAdmin/notification", branchNotificationsRoutes);
 
-//User Routes
+//✅ User Routes
 app.use("/api/user", userRoutes);
 app.use("/api/user/Product", userProductRoutes);
 app.use("/api/user", cartRoutes);
@@ -85,7 +89,8 @@ app.use("/api/user", userOrderRoutes);
 app.use("/api/user", contactRoutes);
 app.use("/api/user/review", reviewRoutes);
 app.use("/api/user/settings", userSettingsRoutes);
-app.use("/api/user", trackingOrderRoutes);
+app.use("/api/user/notification", userNotificationsRoutes);
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

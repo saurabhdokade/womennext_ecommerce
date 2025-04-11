@@ -4,6 +4,7 @@ const router = express.Router();
 const { upload } = require('../../config/cloudinary');
 const branchAdminAuthMiddleware = require('../../middlewares/branchAdminMiddleware');
  
+//✅ Branch Admin Routes
 router.post('/register', upload.fields([
     { name: "profileImage", maxCount: 1 },]) ,register);
 router.post('/login',  login);

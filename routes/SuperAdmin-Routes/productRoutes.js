@@ -13,6 +13,7 @@ const {
 } = require("../../controllers/SuperAdmin-Controllers/productController");
 const router = express.Router();
  
+//✅ SuperAdmin Product Routes
 router.post("/createProduct", upload.array("image", 5), createProduct);
 router.get("/getAllProducts", getAllProducts);
 router.get("/getProductById/:id", getProductById);

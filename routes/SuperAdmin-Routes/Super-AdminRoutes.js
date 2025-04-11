@@ -5,7 +5,7 @@ const superAdminAuthMiddleware = require('../../middlewares/superAdminMiddleware
  
 const router = express.Router();
  
-// Admin Routes
+//✅ SuperAdmin Admin Routes
 router.post('/register',upload.fields([
     { name: "profileImage", maxCount: 1 },
   ]),register)

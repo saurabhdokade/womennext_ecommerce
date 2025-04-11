@@ -3,15 +3,14 @@ const jwt = require("jsonwebtoken");
 const { sendPasswordResetEmail } = require("../../utils/sendEmail");
 const bcrypt = require("bcryptjs");
 
-
-//register
+//✅ register
 const register = async (req, res) => {
   try {
-    const { fullName, contactNumber, email, password} = req.body;
+    const { fullName, contactNumber, email, password } = req.body;
 
     const profileImage = req.files?.profileImage?.[0]?.path;
     // Validate fields
-    if (!fullName || !contactNumber || !email || !password ) {
+    if (!fullName || !contactNumber || !email || !password) {
       return res.status(400).json({ msg: "All fields are required." });
     }
 
@@ -27,7 +26,7 @@ const register = async (req, res) => {
       contactNumber,
       email,
       password,
-      profileImage: profileImage
+      profileImage: profileImage,
     });
 
     // Save admin to database
@@ -40,17 +39,16 @@ const register = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in register:", error);
-    return res.status(500).json({ msg: "Internal Server Error", error: error.message });
+    return res
+      .status(500)
+      .json({ msg: "Internal Server Error", error: error.message });
   }
 };
 
-
-  
-//login
+//✅ login
 const login = async (req, res) => {
   const { email, password } = req.body;
 
-  
   try {
     const admin = await SuperAdmin.findOne({ email });
     if (!admin) {
@@ -58,10 +56,7 @@ const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid Credentials" });
     }
 
-   
-
     const isMatch = await admin.matchPassword(password);
- 
 
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid Credentials" });
@@ -77,18 +72,23 @@ const login = async (req, res) => {
       maxAge: 365 * 24 * 60 * 60 * 1000,
     });
 
-    return res.status(200).json({ message: "Login successful", token, id: admin._id, success: true });
+    return res
+      .status(200)
+      .json({
+        message: "Login successful",
+        token,
+        id: admin._id,
+        success: true,
+      });
   } catch (error) {
     console.error("Error during login:", error);
-    return res.status(500).json({ message: "Server Error", success: false, error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server Error", success: false, error: error.message });
   }
 };
 
-
-
-
-
-// Forgot Password (Send OTP)
+//✅ Forgot Password (Send OTP)
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
@@ -109,7 +109,7 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// Verify OTP
+//✅ Verify OTP
 const verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
   try {
@@ -140,11 +140,13 @@ const verifyOtp = async (req, res) => {
   }
 };
 
-//Get Admin Profile
+//✅ Get Admin Profile
 const getAdminProfile = async (req, res) => {
   try {
     const { id } = req.params; // Admin ID from the route parameter
-    const admin = await SuperAdmin.findById(id).select("profileImage fullName email password"); // Select only fullName, email, and password
+    const admin = await SuperAdmin.findById(id).select(
+      "profileImage fullName email password"
+    ); // Select only fullName, email, and password
 
     if (!admin) {
       return res.status(404).json({ message: "Admin not found." });
@@ -165,51 +167,50 @@ const getAdminProfile = async (req, res) => {
   }
 };
 
-//Update Admin
+//✅ Update Admin
 const updateAdminProfile = async (req, res) => {
-    try {
-      const { id } = req.params; // Get the user ID from request parameters
-      const { fullName,  email, password } = req.body;
-      const{profileImage} = req.files;
-      // Find the user by ID
-      const admin = await SuperAdmin.findById(id);
-      if (!admin) {
-        return res.status(404).json({
-          success: false,
-          message: "Admin not found",
-        });
-      }
-  
-      // Update admin details if provided
-      if (fullName) admin.fullName = fullName;
-      if (email) admin.email = email;
-
-  
-      // If password is provided, hash it and update
-      if (password) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        admin.password = hashedPassword;
-      }
-      if (profileImage) {
-        admin.profileImage = profileImage[0].path;
-      }
-      await admin.save();
-  
-      return res.status(200).json({
-        success: true,
-        admin: admin,
-        message: "Admin details updated successfully",
-      });
-    } catch (error) {
-      return res.status(500).json({
+  try {
+    const { id } = req.params; // Get the user ID from request parameters
+    const { fullName, email, password } = req.body;
+    const { profileImage } = req.files;
+    // Find the user by ID
+    const admin = await SuperAdmin.findById(id);
+    if (!admin) {
+      return res.status(404).json({
         success: false,
-        message: "Error updating user",
-        error: error.message,
+        message: "Admin not found",
       });
     }
-  };
 
-// Reset Password
+    // Update admin details if provided
+    if (fullName) admin.fullName = fullName;
+    if (email) admin.email = email;
+
+    // If password is provided, hash it and update
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      admin.password = hashedPassword;
+    }
+    if (profileImage) {
+      admin.profileImage = profileImage[0].path;
+    }
+    await admin.save();
+
+    return res.status(200).json({
+      success: true,
+      admin: admin,
+      message: "Admin details updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: error.message,
+    });
+  }
+};
+
+//✅ Reset Password
 const resetPassword = async (req, res) => {
   const { email, newPassword, confirmNewPassword } = req.body;
 
@@ -247,7 +248,7 @@ const resetPassword = async (req, res) => {
   }
 };
 
-//Change Password At Profile
+//✅ Change Password At Profile
 const changeAdminPasswordAtProfile = async (req, res) => {
   try {
     const { id } = req.params; // Admin ID from the route parameter
@@ -255,7 +256,9 @@ const changeAdminPasswordAtProfile = async (req, res) => {
 
     // Validate required fields
     if (!currentPassword || !newPassword || !confirmNewPassword) {
-      return res.status(400).json({ message: "All password fields are required." });
+      return res
+        .status(400)
+        .json({ message: "All password fields are required." });
     }
 
     if (newPassword !== confirmNewPassword) {
@@ -270,7 +273,9 @@ const changeAdminPasswordAtProfile = async (req, res) => {
     // Check if the current password is correct
     const isMatch = await admin.matchPassword(currentPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: "Current password is incorrect." });
+      return res
+        .status(400)
+        .json({ message: "Current password is incorrect." });
     }
 
     // Update password
@@ -288,7 +293,8 @@ const changeAdminPasswordAtProfile = async (req, res) => {
     });
   }
 };
-//logout Admin
+
+//✅ logout Admin
 const logout = async (req, res) => {
   try {
     // Clear the token cookie
@@ -300,6 +306,14 @@ const logout = async (req, res) => {
   }
 };
 
-
-
-module.exports = { register, login, forgotPassword, getAdminProfile, updateAdminProfile, verifyOtp, resetPassword, changeAdminPasswordAtProfile, logout };
+module.exports = {
+  register,
+  login,
+  forgotPassword,
+  getAdminProfile,
+  updateAdminProfile,
+  verifyOtp,
+  resetPassword,
+  changeAdminPasswordAtProfile,
+  logout,
+};

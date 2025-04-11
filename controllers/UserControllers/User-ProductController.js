@@ -1,6 +1,6 @@
 const ProductModel = require("../../models/SuperAdminModels/Product");
  
-//Get All Products
+//✅ Get All Products
 const getAllProducts = async (req, res) => {
     try {
         const products = await ProductModel.find(
@@ -28,7 +28,7 @@ const getAllProducts = async (req, res) => {
     }
 };
  
-//Get Product by ID
+//✅ Get Product by ID
 const getProductById = async (req, res) => {
     try {
         const { id } = req.params;

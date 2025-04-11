@@ -1,7 +1,7 @@
 const ProductModel = require("../../models/SuperAdminModels/Product");
 const mongoose = require("mongoose");
  
-// Get all products with pagination
+//✅ Get all products with pagination
 const getAllProducts = async (req, res) => {
     try {
         let { page = 1, limit = 10, search = "" } = req.query;
@@ -55,7 +55,7 @@ const getAllProducts = async (req, res) => {
     }
 };
  
-// Get a single product by ID
+//✅ Get a single product by ID
 const getProductById = async (req, res) => {
     try {
         const { id } = req.params;

@@ -5,6 +5,7 @@ const relativeTime = require("dayjs/plugin/relativeTime");
  
 dayjs.extend(relativeTime);
  
+//✅ Add Review
 const addReview = async (req, res) => {
     try {
         const { productId } = req.params;
@@ -55,6 +56,7 @@ const addReview = async (req, res) => {
     }
 };
  
+//✅ Get All Reviews
 const getAllReviews = async (req, res) => {
     try {
         const { productId } = req.params;
@@ -91,6 +93,7 @@ const getAllReviews = async (req, res) => {
     }
 };
  
+//✅ Get Average Ratings
 const getAverageRatings = async (req, res) => {
     try {
         const { productId } = req.params;

@@ -3,12 +3,13 @@ const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const ProductModel = require("../../models/SuperAdminModels/Product");
 const bcrypt = require("bcryptjs");
 
-//Create Branch
+
+//✅ Create Branch
 const createBranch = async (req, res) => {
-  try {
-    const {
-      branchName,
-      branchManagerName,
+    try {
+        const {
+            branchName,
+            branchManagerName,
       email,
       password,
       phoneNumber,
@@ -54,21 +55,21 @@ const createBranch = async (req, res) => {
   }
 };
 
-//Get all Branch
+//✅ Get all Branch
 const getAllBranches = async (req, res) => {
   try {
     let { page, limit, searchQuery, sortBy, sortOrder } = req.query;
 
-    // Default values for pagination
+    // Default values
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
     const skip = (page - 1) * limit;
 
-    //Implemented Sort
-    sortBy = sortBy || "branchName"; // Default sorting by branchName
+    // Sort
+    sortBy = sortBy || "branchName";
     sortOrder = sortOrder === "desc" ? -1 : 1;
 
-    // Search filter (case-insensitive)
+    // Search filter
     let query = {};
     if (searchQuery) {
       query = {
@@ -80,16 +81,24 @@ const getAllBranches = async (req, res) => {
       };
     }
 
-    // Fetch branches with pagination
-    const branches = await branchModel
+    // Fetch branches
+    const rawBranches = await branchModel
       .find(query)
-      .select("branch branchManagerName servicePinCode") // Exclude password field for security
+      .select("branchName branchManagerName servicePinCode")
       .sort({ [sortBy]: sortOrder })
       .skip(skip)
       .limit(limit);
 
+    // Format servicePinCode as comma-separated string
+    const branches = rawBranches.map(branch => ({
+      branchName: branch.branchName,
+      branchManagerName: branch.branchManagerName,
+      servicePinCode: Array.isArray(branch.servicePinCode)
+        ? branch.servicePinCode.join(', ')
+        : branch.servicePinCode,
+    }));
 
-    // Total count for pagination
+    // Pagination
     const totalBranches = await branchModel.countDocuments(query);
     const totalPages = Math.ceil(totalBranches / limit);
     const hasPrevious = page > 1;
@@ -97,7 +106,7 @@ const getAllBranches = async (req, res) => {
 
     return res.status(200).json({
       totalBranches,
-      totalPages: Math.ceil(totalBranches / limit),
+      totalPages,
       currentPage: page,
       hasPrevious,
       hasNext,
@@ -105,24 +114,37 @@ const getAllBranches = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Internal Server Error", success: false, error: error.message });
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+      error: error.message
+    });
   }
 };
 
-//get Branch by id
+
+//✅ Get Branch by id
 const getBranchById = async (req, res) => {
   try {
     const { id } = req.params;
 
     // Step 1: Find the branch
-    const branch = await branchModel.findById(id).select("phoneNumber servicePinCode fullAddress");
-    if (!branch) {
+    const rawbranch = await branchModel.findById(id)
+    .select({ phoneNumber: 1, servicePinCode: 1, fullAddress: 1, _id: 0 })
+    .lean();
+
+    if (!rawbranch) {
       return res.status(404).json({ message: "Branch not found", success: false });
     }
 
-    // Step 2: Get delivery boys (you can apply filters if needed, like branch-wise)
+    const branch = {
+      ...rawbranch,
+      servicePinCode: Array.isArray(rawbranch.servicePinCode)
+        ? rawbranch.servicePinCode.join(", ")
+        : rawbranch.servicePinCode,
+    };
+
+    // Step 2: Get delivery boys
     const deliveryBoys = await DeliveryBoyModel.find({})
       .select("userId fullName email phoneNumber address")
       .lean();
@@ -135,13 +157,13 @@ const getBranchById = async (req, res) => {
       Address: boy.address,
     }));
 
-    // Step 3: Get products (you can apply branch filter if you have branchId in products)
+    // Step 3: Get products
     const products = await ProductModel.find({})
       .select("productCode brand productName size availableProductQuantity price")
       .lean();
 
     const formattedProducts = products.map((product) => ({
-      id:product._id,
+      id: product._id,
       productCode: product.productCode,
       brand: product.brand,
       productName: product.productName,
@@ -150,7 +172,7 @@ const getBranchById = async (req, res) => {
       price: product.price,
     }));
 
-    // Step 4: Return everything in one response
+    // Step 4: Return response
     return res.status(200).json({
       success: true,
       message: "Branch details fetched successfully",
@@ -168,6 +190,7 @@ const getBranchById = async (req, res) => {
     });
   }
 };
+
 
 
 

@@ -3,7 +3,7 @@ const { getSettings } = require("../../controllers/BranchAdmin-Controllers/branc
 const router = express.Router();
 
 
-
+//✅ Branch Settings Routes
 router.get("/getSettings", getSettings);
 
 module.exports = router;

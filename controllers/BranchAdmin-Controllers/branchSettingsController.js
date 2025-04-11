@@ -1,10 +1,12 @@
 const Settings = require("../../models/SuperAdminModels/Settings");
  
+
+//✅ Get Settings
 const getSettings = async (req, res) => {
-  try {
-    const settings = await Settings.findOne();
-    if (!settings) {
-      return res.status(404).json({ message: "Settings not found" });
+    try {
+        const settings = await Settings.findOne();
+        if (!settings) {
+            return res.status(404).json({ message: "Settings not found" });
     }
     const filteredResponse = {
       termsAndConditions: settings.termsAndConditions,

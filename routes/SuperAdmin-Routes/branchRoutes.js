@@ -3,7 +3,7 @@ const router = express.Router();
 
 const { createBranch, getAllBranches, getBranchById, updateBranch, deleteBranch, availableDeliveryBoys, availableProducts } = require('../../controllers/SuperAdmin-Controllers/branchController');
 
-// Branch Routes
+//✅ SuperAdmin Branch Routes
 router.post('/createBranch', createBranch);
 router.get('/getAllBranches', getAllBranches);
 router.get('/getBranchById/:id', getBranchById);

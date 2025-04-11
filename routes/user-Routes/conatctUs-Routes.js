@@ -3,7 +3,7 @@ const router = express.Router();
 const { submitContactUs } = require("../../controllers/UserControllers/ContactUsController");
  
  
- 
+ //✅ User Contact Us Routes
 router.post("/contact-us", submitContactUs);
  
  

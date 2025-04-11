@@ -5,6 +5,7 @@ const {
 } = require("../../controllers/BranchAdmin-Controllers/branchAdminProductController");
 const router = express.Router();
  
+//✅ Branch Admin Product Routes
 router.get("/getAllProducts", getAllProducts);
 router.get("/getProductById/:id", getProductById);
  

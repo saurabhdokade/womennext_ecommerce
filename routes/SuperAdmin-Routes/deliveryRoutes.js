@@ -9,7 +9,7 @@ const {
 const { upload } = require("../../config/cloudinary");
 const router = express.Router();
  
-
+//✅ SuperAdmin Delivery Routes
 router.post("/addDeliveryBoy", upload.single("image"), addDeliveryBoy);
 router.get("/getAllDeliveryBoys", getAllDeliveryBoys);
 router.get("/getDeliveryBoyById/:id", getDeliveryBoyById);

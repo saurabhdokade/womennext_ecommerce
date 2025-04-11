@@ -3,6 +3,7 @@ const router = express.Router();
 const { createSettings, updateEmergencyDeliveryFeeAndSettingType, getSettings, editTermsAndConditions, editPrivacyPolicy, updateAboutUs, updateReferAndEarn, settingTypeDropdown } = require("../../controllers/SuperAdmin-Controllers/settingsController");
 const { upload } = require("../../config/cloudinary");
  
+//✅ SuperAdmin Setting Routes
 router.post(
   "/AddSettings",
   upload.fields([

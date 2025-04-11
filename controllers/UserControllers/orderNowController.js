@@ -2,7 +2,7 @@ const Order = require("../../models/UserModels/orderNow");
 const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const mongoose = require("mongoose");
 
-// Get Order by ID
+//✅ Get Order by ID
 const getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -26,7 +26,7 @@ const getOrderById = async (req, res) => {
   }
 };
 
-// Confirm Order
+//✅ Confirm Order
 const confirmOrder = async (req, res) => {
   try {
     const orderId = req.params.orderId;
@@ -40,21 +40,13 @@ const confirmOrder = async (req, res) => {
       return res.status(400).json({ message: "Order is already confirmed." });
     }
 
-    const now = new Date()
     order.status = "Confirmed";
-    order.statusTimeline.orderConfirmed = now;
-    order.tracking.push({
-      status: "Confirmed",
-      date: order.statusTimeline.orderConfirmed,
-    });
-    await order.save({timestamps:false});
 
-    const responseOrder = order.toObject();
-    delete responseOrder.tracking;
+    await order.save();
 
     return res.status(200).json({
       message: "Order confirmed successfully",
-      order: responseOrder,
+      order,
     });
   } catch (error) {
     console.error("Server Error:", error);
@@ -62,7 +54,7 @@ const confirmOrder = async (req, res) => {
   }
 };
 
-//Delivered Order
+//✅ Delivered Order
 const deliveredOrder = async (req, res) => {
   try {
     const orderId = req.params.orderId;
@@ -80,50 +72,32 @@ const deliveredOrder = async (req, res) => {
       return res.status(400).json({ message: "Order is already delivered." });
     }
 
-    //  Get the delivered date from statusTimeline
-    const deliveredDate = order.statusTimeline.delivered;
-
-    if(!deliveredDate) {
-      return res.status(400).json({ message: "Order is not yet delivered." });
-    }
-  
     order.status = "Delivered";
-
-    //  Check if the order has already been tracked
-    const alreadyTracked = order.tracking.some(t => t.status === "Delivered");
-    if (!alreadyTracked) {
-      order.tracking.push({
-        status: "Delivered",
-        date: deliveredDate
-      });
-    }
-    
     //Removed tracking from base order object
     const responseOrder = order.toObject();
-    delete responseOrder.tracking;
     delete responseOrder.deliveryBoy;
 
-    await order.save({ timestamps: false });
+    await order.save();
     // Step 4: Get previous delivered orders of this delivery boy
     let formattedPreviousOrders = [];
     if (order.deliveryBoy && order.deliveryBoy._id) {
       const previousOrders = await Order.find({
         deliveryBoy: order.deliveryBoy._id,
         status: "Delivered",
-        _id: { $ne: order._id }
+        _id: { $ne: order._id },
       })
         .populate("items.product", "productName price")
         .select("orderDate items totalAmount deliveryAddress");
 
-      formattedPreviousOrders = previousOrders.map(ord => ({
+      formattedPreviousOrders = previousOrders.map((ord) => ({
         orderDate: ord.orderDate,
         deliveryAddress: ord.deliveryAddress,
         totalAmount: ord.totalAmount,
-        items: ord.items.map(item => ({
+        items: ord.items.map((item) => ({
           productName: item.product?.productName || "N/A",
           quantity: item.quantity,
           price: item.price,
-        }))
+        })),
       }));
     }
 
@@ -140,15 +114,14 @@ const deliveredOrder = async (req, res) => {
       // } : null,
       // previousOrders: formattedPreviousOrders
     });
-
   } catch (error) {
     console.error("Server Error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-//Ongoing Order
-const ongoingOrder = async (req, res) => {
+//✅ Ongoing Placed
+const orderPlaced = async (req, res) => {
   try {
     const orderId = req.params.orderId;
 
@@ -157,81 +130,55 @@ const ongoingOrder = async (req, res) => {
       return res.status(404).json({ message: "Order not found." });
     }
 
-    if (order.status === "In Process") {
-      return res.status(400).json({ message: "Order is already In process." });
+    if (order.status === "Order Placed") {
+      return res.status(400).json({ message: "Order is already Placed." });
     }
 
-    order.status = "In Process";
-    await order.save({ timestamps: false });
-
-    // ✅ Remove tracking from response
-    const responseOrder = order.toObject();
-    delete responseOrder.tracking;
+    order.status = "Order Placed";
+    await order.save();
 
     return res.status(200).json({
-      message: "Order is Currently In Process....",
-      order: responseOrder,
+      message: "Your Order Placed Successfully",
+      order,
     });
   } catch (error) {
     console.error("Server Error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+ 
 
-//packed The product
+//✅ Packed The product
 const packedOrder = async (req, res) => {
   try {
     const orderId = req.params.orderId;
     const order = await Order.findById(orderId);
 
-    if (!order)
-      return res.status(404).json({ message: "Order not found." });
+    if (!order) return res.status(404).json({ message: "Order not found." });
 
     if (order.status === "Packed the Product")
       return res.status(400).json({ message: "Order is already packed." });
 
-    // ✅ Set packed date in statusTimeline
-    const packedDate = new Date();
-    order.statusTimeline.packed = packedDate;
+
 
     // ✅ Update order status
     order.status = "Packed the Product";
 
-    // ✅ Push to tracking only if not already there
-    const alreadyTracked = order.tracking.some(
-      (t) => t.status === "Packed the Product"
-    );
-
-    if (!alreadyTracked) {
-      order.tracking.push({
-        status: "Packed the Product",
-        date: packedDate
-      });
-    }
-
-    console.log("Before Save => Status:", order.status);
-    await order.save({ timestamps: false });
-    console.log("After Save => Status:", order.status);
-
-//     console.log("Order ID:", order._id);
-// console.log("Current Status:", order.status);
-
-    const responseOrder = order.toObject();
-    delete responseOrder.tracking;
+    await order.save();
 
     return res.status(200).json({
       message: "Order packed successfully",
-      order: responseOrder
+      order,
     });
-
   } catch (error) {
     console.error("Server Error:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
 
-
-//Arrived in the Warehouse
+//✅ Arrived in the Warehouse
 const arrivedInWarehouse = async (req, res) => {
   try {
     const orderId = req.params.orderId;
@@ -249,31 +196,19 @@ const arrivedInWarehouse = async (req, res) => {
 
     const arrivedDate = order.statusTimeline.arrivedAtWarehouse;
 
-    if(!arrivedDate) {
-      return res.status(400).json({ message: "Order is not yet arrived in the warehouse." });
+    if (!arrivedDate) {
+      return res
+        .status(400)
+        .json({ message: "Order is not yet arrived in the warehouse." });
     }
-  
+
     order.status = "Arrived in the Warehouse";
 
-    //  Check if the order has already been tracked
-    const alreadyTracked = order.tracking.some(t => t.status === "Arrived in the Warehouse");
-    if (!alreadyTracked) {
-      order.tracking.push({
-        status: "Arrived in the Warehouse",
-        date: arrivedDate
-      });
-    }
-    await order.save({ timestamps: false });
-    
-    // ✅ Remove tracking from response
-    const responseOrder = order.toObject();
-    delete responseOrder.tracking;
-
-  
+    await order.save();
 
     return res.status(200).json({
       message: "Order arrived in the warehouse successfully",
-      order: responseOrder,
+      order,
     });
   } catch (error) {
     console.error("Server Error:", error);
@@ -281,7 +216,7 @@ const arrivedInWarehouse = async (req, res) => {
   }
 };
 
-//Nearby Courier Facility
+//✅ Nearby Courier Facility
 const nearByCourierFacility = async (req, res) => {
   try {
     const orderId = req.params.orderId;
@@ -297,32 +232,13 @@ const nearByCourierFacility = async (req, res) => {
         .json({ message: "Order is already at Nearby courier facility." });
     }
 
-    const courierDate = order.statusTimeline.nearCourierFacility;
-
-    if(!courierDate) {
-      return res.status(400).json({ message: "Order is not yet Nearby courier facility." });
-    }
-  
     order.status = "Nearby Courier Facility";
-
-    //  Check if the order has already been tracked
-    const alreadyTracked = order.tracking.some(t => t.status === "Nearby Courier Facility");
-    if (!alreadyTracked) {
-      order.tracking.push({
-        status: "Nearby Courier Facility",
-        date: courierDate
-      });
-    }
-    await order.save({ timestamps: false });
-    // ✅ Remove tracking from response
-    const responseOrder = order.toObject();
-    delete responseOrder.tracking;
 
     await order.save();
 
     return res.status(200).json({
       message: "Order ready by courier facility successfully",
-      order: responseOrder,
+      order,
     });
   } catch (error) {
     console.error("Server Error:", error);
@@ -330,8 +246,7 @@ const nearByCourierFacility = async (req, res) => {
   }
 };
 
-
-//Out for Delivery
+//✅ Out for Delivery
 const outForDelivery = async (req, res) => {
   try {
     const orderId = req.params.orderId;
@@ -349,31 +264,19 @@ const outForDelivery = async (req, res) => {
 
     const outForDeliveryDate = order.statusTimeline.outForDelivery;
 
-    if(!outForDeliveryDate) {
-      return res.status(400).json({ message: "Order is not yet out for delivery." });
+    if (!outForDeliveryDate) {
+      return res
+        .status(400)
+        .json({ message: "Order is not yet out for delivery." });
     }
-  
+
     order.status = "Out for Delivery";
 
-    //  Check if the order has already been tracked
-    const alreadyTracked = order.tracking.some(t => t.status === "Out for Delivery");
-    if (!alreadyTracked) {
-      order.tracking.push({
-        status: "Out for Delivery",
-        date: outForDeliveryDate
-      });
-    }
-    await order.save({ timestamps: false });
-  
-    // ✅ Remove tracking from response
-    const responseOrder = order.toObject();
-    delete responseOrder.tracking;
-
-   
+    await order.save();
 
     return res.status(200).json({
       message: "Order out for delivery successfully",
-      order: responseOrder,
+      order,
     });
   } catch (error) {
     console.error("Server Error:", error);
@@ -381,7 +284,7 @@ const outForDelivery = async (req, res) => {
   }
 };
 
-// Cancel Order
+//✅ Cancel Order
 const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -419,17 +322,13 @@ const cancelOrder = async (req, res) => {
 
     order.status = "Cancelled";
     order.cancelReason = cancelReason;
-    order.otherReason = cancelReason === "Other" ? otherReason : null;
+    order.otherReason = cancelReason === "Other" ? otherReason : N / A;
 
     await order.save({ timestamps: false });
 
-    // Removed tracking from response
-    const responseOrder = order.toObject();
-    delete responseOrder.tracking;
-
     return res.status(200).json({
       message: "Order cancelled successfully",
-      order: responseOrder,
+      order,
     });
   } catch (error) {
     console.error("Server Error:", error);
@@ -437,8 +336,7 @@ const cancelOrder = async (req, res) => {
   }
 };
 
-
-// Get User Orders
+//✅ Get User Orders
 const getUserOrders = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -450,7 +348,7 @@ const getUserOrders = async (req, res) => {
     }
 
     // Remove tracking from all orders
-    const sanitizedOrders = orders.map(order => {
+    const sanitizedOrders = orders.map((order) => {
       const orderObj = order.toObject();
       delete orderObj.tracking;
       return orderObj;
@@ -463,7 +361,9 @@ const getUserOrders = async (req, res) => {
     const deliveredOrders = sanitizedOrders.filter(
       (order) => order.status === "Delivered"
     );
-    const ongoingOrders = sanitizedOrders.filter((order) => order.status === "Ongoing");
+    const ongoingOrders = sanitizedOrders.filter(
+      (order) => order.status === "Ongoing"
+    );
     const cancelledOrders = sanitizedOrders.filter(
       (order) => order.status === "Cancelled"
     );
@@ -483,7 +383,7 @@ const getUserOrders = async (req, res) => {
   }
 };
 
-// Get Order Details
+//✅ Get Order Details
 const getViewOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -548,7 +448,7 @@ module.exports = {
   getOrderById,
   confirmOrder,
   deliveredOrder,
-  ongoingOrder,
+  orderPlaced,
   packedOrder,
   arrivedInWarehouse,
   nearByCourierFacility,

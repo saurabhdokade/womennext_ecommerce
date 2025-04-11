@@ -1,5 +1,6 @@
 const Settings = require("../../models/SuperAdminModels/Settings");
  
+//✅ Get About Us
 const getAboutUs = async (req, res) => {
   try {
     const settings = await Settings.find();
@@ -20,6 +21,7 @@ const getAboutUs = async (req, res) => {
   }
 };
  
+//✅ Get Privacy Policy
 const getPrivacyPolicy = async (req, res) => {
   try {
     const settings = await Settings.find();
@@ -40,6 +42,7 @@ const getPrivacyPolicy = async (req, res) => {
   }
 };
  
+//✅ Get Terms and Conditions
 const getTermsAndConditions = async (req, res) => {
   try {
     const settings = await Settings.find();
@@ -60,6 +63,7 @@ const getTermsAndConditions = async (req, res) => {
   }
 };
  
+//✅ Get Refer and Earn
 const getReferAndEarn = async (req, res) => {
   try {
     const settings = await Settings.find();

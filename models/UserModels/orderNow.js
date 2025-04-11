@@ -39,11 +39,7 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    deliveryCharges: {
-      type: Number,
-      default: 0,
-    },
-
+    
     items: [
       {
         product: {
@@ -55,15 +51,41 @@ const orderSchema = new mongoose.Schema(
         price: { type: Number, required: true },
       },
     ],
+    orderSummary: {
+      productImage: { type: String },
+      items: { type: Number },
+      itemTotal: { type: Number },
+      deliveryCharges: { type: Number },
+      orderTotal: { type: Number },
+    },
     status: {
       type: String,
       enum: statusEnum,
-      default: "Order Placed",
+      enum:["Delivered", "In Process", "Cancelled","Confirmed"],
+      default: "In Process",
     },
-    // orderDate: {
-    //   type: Date,
-    //   default: Date.now,
-    // },
+    cancelReason: {
+      type: String,
+      enum:[
+        "I want to change the Product",
+        "Not available on the delivery time",
+        "Price High",
+        "I ordered wrong Product",
+        "Other",
+      ]
+    },
+    otherReason: {
+      type: String,
+    },
+    orderId: {
+      type: String,
+      unique: true,
+      required: true
+    }, 
+    orderDate: {
+      type: Date,
+      default: Date.now,
+    },
     deliveryBoy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "DeliveryBoy",
@@ -74,40 +96,6 @@ const orderSchema = new mongoose.Schema(
       ref: "Branches",
     },
 
-    //Status Timeline
-    statusTimeline: {
-      orderPlaced: { type: Date, default: Date.now },
-      orderConfirmed: { 
-        type: Date, 
-        default: () => new Date(Date.now() + 1 * 60 * 60 * 1000) // +1 hr
-      },
-      packed: { 
-        type: Date, 
-        default: () => new Date(Date.now() + 14 * 60 * 60 * 1000) // +14 hr
-      },
-      arrivedAtWarehouse: { 
-        type: Date, 
-        default: () => new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000) // +1 day 2 PM
-      },
-      nearCourierFacility: { 
-        type: Date, 
-        default: () => new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 15 * 60 * 60 * 1000) // +1 day 3 PM
-      },
-      outForDelivery: { 
-        type: Date, 
-        default: () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000) // +2 day 2 PM
-      },
-      delivered: { 
-        type: Date, 
-        default: () => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 16 * 60 * 60 * 1000) // +2 day 4 PM
-      }
-    },
-    tracking: [
-      {
-        status: String,
-        date: { type: Date, default: Date.now }
-      }
-    ],
    
     
   },

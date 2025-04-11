@@ -2,7 +2,7 @@ const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const Order = require("../../models/UserModels/orderNow");
 const mongoose = require("mongoose");
  
-//Get All Delivery Boys
+//✅ Get All Delivery Boys
 const getAllDeliveryBoys = async (req, res) => {
     try {
         let { page = 1, limit = 10, search = "", sortOrder } = req.query;
@@ -52,7 +52,7 @@ const getAllDeliveryBoys = async (req, res) => {
     }
 };
  
-//Get Delivery Boy By ID
+//✅ Get Delivery Boy By ID
 const getDeliveryBoyById = async (req, res) => {
     try {
       const { id } = req.params;
@@ -139,7 +139,7 @@ const getDeliveryBoyById = async (req, res) => {
 
 
 
-//Get Order Details By Delivery Boy ID
+//✅ Get Order Details By Delivery Boy ID
 const getOrderDetailsByDeliveryBoyId = async (req, res) => {
   try {
       const { id } = req.params;
@@ -221,5 +221,24 @@ const getOrderDetailsByDeliveryBoyId = async (req, res) => {
   }
 };
   
- 
-module.exports = { getAllDeliveryBoys, getDeliveryBoyById, getOrderDetailsByDeliveryBoyId };
+//✅ DropDown Api's For Delivery Boy
+const getDeliveryBoyDropdown = async (req, res) => {
+  try {
+    const deliveryBoys = await DeliveryBoyModel.find().select("fullName -_id");
+
+    const names = deliveryBoys.map((boy) => boy.fullName);
+
+    return res.status(200).json({
+      success: true,
+      deliveryBoys: names,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch delivery boy dropdown",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { getAllDeliveryBoys, getDeliveryBoyById, getOrderDetailsByDeliveryBoyId, getDeliveryBoyDropdown };

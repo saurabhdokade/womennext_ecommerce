@@ -1,6 +1,7 @@
  
 const ContactUs = require("../../models/UserModels/Contact-Us");
  
+//✅ Submit Contact Us
 const submitContactUs = async (req, res) => {
   try {
     const { email, phoneNumber, suggestions } = req.body;
