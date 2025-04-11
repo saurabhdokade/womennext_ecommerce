@@ -98,7 +98,7 @@ const getAllOrders = async (req, res) => {
 //✅getOrderById
 const getOrderById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id} = req.params;
 
     if (!id) {
       return res.status(400).json({
@@ -126,10 +126,9 @@ const getOrderById = async (req, res) => {
 
     if (order.branchInfo) {
       matchedBranch = {
-        // id: order.branchInfo._id,
         name: order.branchInfo.branchName,
         phone: order.branchInfo.phoneNumber,
-        Address: order.branchInfo.fullAddress,
+        fullAddress: order.branchInfo.fullAddress,
       };
     } else {
       const allBranches = await branchModel.find();
@@ -148,7 +147,6 @@ const getOrderById = async (req, res) => {
 
       if (found) {
         matchedBranch = {
-          id: found._id,
           name: found.branchName,
           phone: found.phoneNumber,
           fullAddress: found.fullAddress,
@@ -156,37 +154,33 @@ const getOrderById = async (req, res) => {
       }
     }
 
-    //Get Single  Product Info
     const firstItem = order.items?.[0];
-    const productInfo = firstItem
-      ? {
-          image: firstItem.product?.image[0],
-          ProductCode: firstItem.product?.productCode,
-          ProductBrand: firstItem.product?.brand,
-          ProductSubType: firstItem.product?.productSubType,
-          ProductDescription: firstItem.product?.productDescription,
-          Size: firstItem.product?.size,
-          OrderQuantity: firstItem.quantity,
-          Price: firstItem.product?.price,
-          OrderStatus: order.status,
-          PaymentMode: order.paymentMethod,
-        }
-      : null;
 
     const simplifiedOrder = {
-      orderId: order._id,
+      image: firstItem?.product?.image[0],
+      OrderID: order.orderId,
+
       customerInfo: {
         name: order.user?.fullName,
         phone: order.user?.phoneNumber,
         email: order.user?.email,
         address: order.user?.address,
       },
+
       branchInfo: matchedBranch,
-      ...productInfo,
-      DeliveryType: order.emergencyDelivery
-        ? "Emergency (₹40 Extra)"
-        : "Normal Delivery",
-      grandTotal: order.totalAmount,
+
+      ProductCode: firstItem?.product?.productCode,
+      ProductBrand: firstItem?.product?.brand,
+      ProductSubType: firstItem?.product?.productSubType,
+      ProductDescription: firstItem?.product?.productDescription,
+      Size: firstItem?.product?.size,
+      OrderQuantity: firstItem?.quantity,
+      Price: firstItem?.product?.price,
+      OrderStatus: order.status,
+      PaymentMode: order.paymentMethod,
+      DeliveryType: order.emergencyDelivery ? "Emergency (₹40 Extra)" : "Normal Delivery",
+      GrandTotal: order.totalAmount,
+
       ...(order.status === "Cancelled" && {
         reason: order.cancelReason || order.otherReason || "N/A",
       }),
