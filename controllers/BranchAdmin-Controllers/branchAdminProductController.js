@@ -3,7 +3,7 @@ const ProductModel = require("../../models/SuperAdminModels/Product");
 const mongoose = require("mongoose");
 
  
-// Get all products with pagination
+//✅ Get all products with pagination
 const getAllProducts = async (req, res) => {
     try {
         let { page = 1, limit = 10, search = "" } = req.query;
