@@ -54,6 +54,8 @@ const userNotificationsRoutes = require("./routes/user-Routes/userNotficationsRo
 const deliveryBoyModelRoutes = require("./routes/DeliveryBoyRoutes/deliveryBoyRoutes");
 const deliveryBoyNotificationRoutes = require("./routes/DeliveryBoyRoutes/deliveryBoyNotificationRoutes");
 const deliveryBoyOrderRoutes = require("./routes/DeliveryBoyRoutes/deliveryBoyorderRoutes");
+const deliverySettingsRoutes = require("./routes/DeliveryBoyRoutes/deliverySettingsRoutes");
+
 const app = express();
 
 //✅ Middleware
@@ -102,6 +104,7 @@ app.use("/api/user/notification", userNotificationsRoutes);
 app.use("/api/deliveryBoy", deliveryBoyModelRoutes);
 app.use("/api/deliveryBoy/notification", deliveryBoyNotificationRoutes);
 app.use("/api/order", deliveryBoyOrderRoutes);
+app.use("/api/deliverySettings", deliverySettingsRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
