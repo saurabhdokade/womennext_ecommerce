@@ -25,13 +25,15 @@ const notificationsRoutes = require("./routes/SuperAdmin-Routes/notficationsRout
 
 //✅ Importing All Branch Admin Related Routes
 const branchAdminRoutes = require("./routes/BranchAdmin-Routes/branchAdminRoutes");
-const branchDetailsRoutes = require("./routes/BranchAdmin-Routes/branchDetailsRoutes");
+const branchDetailsRoutes = require("./routes/BranchAdmin-Routes/branchAdminDetailsRoutes");
 const branchAdminProductRoutes = require("./routes/BranchAdmin-Routes/branchAdminProductRoutes");
 const branchAdminDeliveryBoyRoutes = require("./routes/BranchAdmin-Routes/branch-adminDeliveryBoyRoutes");
 const branchSettingsRoutes = require("./routes/BranchAdmin-Routes/branchSettingsRoutes");
 const branchOrderRoutes = require("./routes/BranchAdmin-Routes/branch-adminOrderRoutes");
 const branchAdminCustomerRoutes = require("./routes/BranchAdmin-Routes/branchAdminCustomerRoutes");
 const branchNotificationsRoutes = require("./routes/BranchAdmin-Routes/branchAdminNotificationRoutes");
+const branchAdminDashboardRoutes = require("./routes/BranchAdmin-Routes/branchAdminDashboardRoutes");
+
 
 
 
@@ -48,6 +50,10 @@ const userSettingsRoutes = require("./routes/user-Routes/userSettingsRoutes");
 const userNotificationsRoutes = require("./routes/user-Routes/userNotficationsRoutes");
 
 
+//✅ Importing All Delivery Boy Routes
+const deliveryBoyModelRoutes = require("./routes/DeliveryBoyRoutes/deliveryBoyRoutes");
+const deliveryBoyNotificationRoutes = require("./routes/DeliveryBoyRoutes/deliveryBoyNotificationRoutes");
+const deliveryBoyOrderRoutes = require("./routes/DeliveryBoyRoutes/deliveryBoyorderRoutes");
 const app = express();
 
 //✅ Middleware
@@ -80,6 +86,7 @@ app.use("/api/branchSettings", branchSettingsRoutes);
 app.use("/api/branchOrder", branchOrderRoutes);
 app.use("/api/branchCustomer", branchAdminCustomerRoutes);
 app.use("/api/branchAdmin/notification", branchNotificationsRoutes);
+app.use("/api/branchAdmin/dashboard", branchAdminDashboardRoutes);
 
 //✅ User Routes
 app.use("/api/user", userRoutes);
@@ -91,6 +98,10 @@ app.use("/api/user/review", reviewRoutes);
 app.use("/api/user/settings", userSettingsRoutes);
 app.use("/api/user/notification", userNotificationsRoutes);
 
+//✅ Delivery Boy Routes
+app.use("/api/deliveryBoy", deliveryBoyModelRoutes);
+app.use("/api/deliveryBoy/notification", deliveryBoyNotificationRoutes);
+app.use("/api/order", deliveryBoyOrderRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

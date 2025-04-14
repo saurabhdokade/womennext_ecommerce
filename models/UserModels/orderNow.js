@@ -1,6 +1,5 @@
 const statusEnum = [
   "Order Placed",
-  // "Pending",
   "Delivered",
   "Cancelled",
   "Confirmed",
@@ -11,14 +10,21 @@ const statusEnum = [
   "Nearby Courier Facility",
   "Out for Delivery",
 ];
+ 
 const mongoose = require("mongoose");
-
+ 
 const orderSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      unique:true
+    },
+    deliveryStatus: {
+      type: String,
+      enum: ["In Process", "Accepted", "Cancelled", "Delivered"],
+      default: "In Process"
     },
     deliveryAddress: {
       name: { type: String, required: true },
@@ -31,6 +37,10 @@ const orderSchema = new mongoose.Schema(
       enum: ["COD", "Online"],
       required: true,
     },
+    cashReceived: {
+      type: Boolean,
+      default: false
+    },
     emergencyDelivery: {
       type: Boolean,
       default: false,
@@ -39,7 +49,6 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    
     items: [
       {
         product: {
@@ -61,27 +70,51 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: statusEnum,
-      enum:["Delivered", "In Process", "Cancelled","Confirmed"],
       default: "In Process",
     },
+ 
+    // ✅ Updated cancelReason (merged both customer + delivery boy reasons)
     cancelReason: {
       type: String,
-      enum:[
+      enum: [
+        // Customer reasons
         "I want to change the Product",
         "Not available on the delivery time",
         "Price High",
         "I ordered wrong Product",
+        // Delivery boy reasons
+        "Vehicle Mechanical Issue",
+        "Not Feeling Well",
+        "Emergency or Personal Reason",
+        "Rescheduling After Sometime",
         "Other",
-      ]
+      ],
     },
+ 
+    // ✅ Optional custom text if "Other" selected
     otherReason: {
       type: String,
+      default: null,
     },
+ 
+    // ✅ Who cancelled the order
+    cancelledBy: {
+      type: String,
+      enum: ["Customer", "Delivery Boy"],
+      default: null,
+    },
+ 
+    // ✅ Timestamp of cancellation
+    cancelDate: {
+      type: Date,
+      default: null,
+    },
+ 
     orderId: {
       type: String,
       unique: true,
-      required: true
-    }, 
+      required: true,
+    },
     orderDate: {
       type: Date,
       default: Date.now,
@@ -95,13 +128,9 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Branches",
     },
-
-   
-    
   },
   { timestamps: true }
 );
-
+ 
 const Order = mongoose.model("OrderCart", orderSchema);
-
 module.exports = Order;

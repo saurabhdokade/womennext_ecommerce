@@ -1,4 +1,6 @@
 const ProductModel = require("../../models/SuperAdminModels/Product");
+const BranchModel = require("../../models/SuperAdminModels/branch");
+const BranchAdminProductModel = require("../../models/BranchAdminModels/branchAdminProducts");
 const mongoose = require("mongoose");
 
 //✅ Create Product
@@ -67,40 +69,48 @@ const createProduct = async (req, res) => {
 //✅ Get All Products
 const getAllProducts = async (req, res) => {
   try {
-    let { page = 1, limit = 10, search = "" } = req.query; // Default: page 1, limit 10, empty search query
-    page = parseInt(page);
-    limit = parseInt(limit);
+      let { page = 1, limit = 10, search = "" } = req.query; // Default: page 1, limit 10, empty search query
+      page = parseInt(page);
+      limit = parseInt(limit);
 
-    // Create a search filter
-    const searchFilter = {
-      $or: [
-        { brand: { $regex: search, $options: "i" } },
-        { productName: { $regex: search, $options: "i" } },
-        { productSubType: { $regex: search, $options: "i" } },
-      ],
-    };
+      // Create a search filter
+      const searchFilter = {
+          $or: [
+              { brand: { $regex: search, $options: "i" } },
+              { productName: { $regex: search, $options: "i" } },
+              { productSubType: { $regex: search, $options: "i" } },
+          ],
+      };
 
-    const totalProducts = await ProductModel.countDocuments(searchFilter);
-    const products = await ProductModel.find(searchFilter)
-      .skip((page - 1) * limit)
-      .limit(limit);
+      const totalProducts = await ProductModel.countDocuments(searchFilter);
+      const products = await ProductModel.find(searchFilter)
+          .select("image productName availableProductQuantity")
+          .skip((page - 1) * limit)
+          .limit(limit);
 
-    const totalPages = Math.ceil(totalProducts / limit);
-    const hasPrevious = page > 1;
-    const hasNext = page < totalPages;
+      const formattedProduct = products.map((product) => ({
+          id: product._id,
+          image: product.image[0],
+          productName: product.productName,
+          availableProductQuantity: product.availableProductQuantity
+      }));
 
-    res.status(200).json({
-      success: true,
-      totalProducts,
-      totalPages,
-      currentPage: page,
-      previous: hasPrevious,
-      next: hasNext,
-      products,
-    });
+      const totalPages = Math.ceil(totalProducts / limit);
+      const hasPrevious = page > 1;
+      const hasNext = page < totalPages;
+
+      res.status(200).json({
+          success: true,
+          totalProducts,
+          totalPages,
+          currentPage: page,
+          previous: hasPrevious,
+          next: hasNext,
+          products: formattedProduct,
+      });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ success: false, message: error.message });
+      console.error(error);
+      return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -302,6 +312,191 @@ const removeProductQuantity = async (req, res) => {
   }
 };
 
+//✅ Get Available Product Quantity
+const getAvailableProductQuantity = async (req, res) => {
+  try {
+      const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+          return res
+              .status(400)
+              .json({ success: false, message: "Invalid product ID." });
+      }
+
+      const product = await ProductModel.findById(id).select(
+          "availableProductQuantity"
+      );
+
+      if (!product) {
+          return res
+              .status(404)
+              .json({ success: false, message: "Product not found" });
+      }
+
+      res.status(200).json({
+          success: true,
+          availableProductQuantity: product.availableProductQuantity,
+      });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+//✅ Branch Dropdown
+const getAllBranches = async (req, res) => {
+  try {
+      const branch = await BranchModel.find({}).select("branchName");
+      res.status(200).json({ success: true, branch });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+//✅ Assign Product to Branch
+const assignToBranch = async (req, res) => {
+  try {
+      const assignments = req.body;
+
+      if (!Array.isArray(assignments) || assignments.length === 0) {
+          return res.status(400).json({
+              success: false,
+              message: "Request body must be a non-empty array.",
+          });
+      }
+
+      // All entries must share the same productId
+      const { productId } = assignments[0];
+      if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
+          return res.status(400).json({
+              success: false,
+              message: "Invalid or missing productId.",
+          });
+      }
+
+      // Validate all entries and sum total quantity
+      let totalQuantityToAdd = 0;
+      for (const assignment of assignments) {
+          const { quantityToAdd, branchId } = assignment;
+
+          if (!quantityToAdd || !branchId) {
+              return res.status(400).json({
+                  success: false,
+                  message: "Each object must have quantityToAdd and branchId.",
+              });
+          }
+
+          if (!mongoose.Types.ObjectId.isValid(branchId)) {
+              return res.status(400).json({
+                  success: false,
+                  message: "Invalid branch ID found in one of the object.",
+              });
+          }
+
+          totalQuantityToAdd += quantityToAdd;
+      }
+
+      // Fetch product
+      const product = await ProductModel.findById(productId).select(
+          "availableProductQuantity"
+      );
+      if (!product) {
+          return res.status(404).json({
+              success: false,
+              message: "Product not found.",
+          });
+      }
+
+      // Check stock
+      if (product.availableProductQuantity < totalQuantityToAdd) {
+          return res.status(400).json({
+              success: false,
+              message: `Only ${product.availableProductQuantity} unit(s) available in stock. Please reduce the total quantity.`,
+          });
+      }
+
+      // Update each branch's inventory
+      const options = {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true,
+      };
+
+      for (const { quantityToAdd, branchId } of assignments) {
+          await BranchAdminProductModel.findOneAndUpdate(
+              { product: productId, branch: branchId },
+              { $inc: { quantity: quantityToAdd } },
+              options
+          );
+      }
+
+      // Update main product inventory
+      product.availableProductQuantity -= totalQuantityToAdd;
+      await product.save();
+
+      return res.status(200).json({
+          success: true,
+          message: "Quantity updated successfully!",
+      });
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+          success: false,
+          message: error.message,
+      });
+  }
+};
+
+//✅ Get available quantity of branch product
+const getBranchProductQuantity = async (req, res) => {
+  try {
+      const { branchId, productId } = req.query;
+
+      // Validate presence and format
+      if (!branchId || !productId) {
+          return res.status(400).json({
+              success: false,
+              message: "branchId and productId are required.",
+          });
+      }
+
+      const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+      if (!isValidObjectId(branchId) || !isValidObjectId(productId)) {
+          return res.status(400).json({
+              success: false,
+              message: "Invalid branchId or productId format.",
+          });
+      }
+
+      // Fetch quantity from BranchAdminProductModel
+      const product = await BranchAdminProductModel.findOne({
+          branch: branchId,
+          product: productId,
+      }).select("quantity");
+
+      if (!product) {
+          return res.status(404).json({
+              success: false,
+              message: "Product not found.",
+          });
+      }
+
+      return res.status(200).json({
+          success: true,
+          availableQuantity: product.quantity,
+      });
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+          success: false,
+          message: error.message,
+      });
+  }
+};
+
+
+
 // ✅ Delete a product by ID
 const deleteProductById = async (req, res) => {
   try {
@@ -349,11 +544,16 @@ const getSizes = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 module.exports = {
   createProduct,
   getAllProducts,
   getProductById,
   updateProduct,
+  getAvailableProductQuantity,
+  getAllBranches,
+  assignToBranch,
+  getBranchProductQuantity,
   deleteProductById,
   getBrands,
   getSizes,

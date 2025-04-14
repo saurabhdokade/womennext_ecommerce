@@ -34,7 +34,7 @@ const branchAdminSchema = new mongoose.Schema(
     },
     branch: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Branch", // Reference to Branch schema
+      ref: "Branches", // Reference to Branch schema
       required: true,
       trim: true,
     },

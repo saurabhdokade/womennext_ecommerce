@@ -138,11 +138,13 @@ const getBranchAdminProfile = async (req, res) => {
   try {
     const { id } = req.params;
     const branchAdmin = await BranchAdmin.findById(id)
-      .populate("branch", "branchName fullAddress")
+      .populate("branch", "branchName")
       .select("fullName email contactNumber profileImage branch");
+    
     if (!branchAdmin) {
       return res.status(404).json({ message: "Branch Admin not found." });
     }
+
     res.status(200).json({
       success: true,
       message: "Branch Admin profile fetched successfully.",
@@ -156,7 +158,8 @@ const getBranchAdminProfile = async (req, res) => {
     });
   }
 };
-
+   
+   
 //✅ Update Branch Admin
 const updateBranchAdminProfile = async (req, res) => {
   try {

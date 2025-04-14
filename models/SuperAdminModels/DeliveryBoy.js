@@ -1,5 +1,6 @@
 const { Schema, model } = require("mongoose");
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs"); // You forgot to import this!
 
 const deliveryBoySchema = new Schema(
     {
@@ -57,11 +58,36 @@ const deliveryBoySchema = new Schema(
         branchInfo: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Branches",
-            required: false
-          },
+            required: false,
+        },
+        isActive: {
+            type: Boolean,
+            default: true,
+        },
     },
     { timestamps: true }
 );
- 
+
+// ✅ Define middleware & methods BEFORE model compilation
+
+// Pre-save hook for hashing passwords
+deliveryBoySchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+});
+
+// Method for password comparison
+deliveryBoySchema.methods.matchPassword = async function (enteredPassword) {
+    return bcrypt.compare(enteredPassword, this.password);
+};
+
+// Virtual field to generate full details
+deliveryBoySchema.virtual("fullDetails").get(function () {
+    return `${this.fullName} (${this.userId}) - ${this.email}`;
+});
+
+// ✅ Compile the model AFTER defining all schema methods
 const DeliveryBoyModel = model("DeliveryBoy", deliveryBoySchema);
 module.exports = DeliveryBoyModel;

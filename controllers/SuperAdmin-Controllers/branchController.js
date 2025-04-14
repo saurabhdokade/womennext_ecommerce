@@ -1,15 +1,16 @@
 const branchModel = require("../../models/SuperAdminModels/branch");
 const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const ProductModel = require("../../models/SuperAdminModels/Product");
+const BranchAdminProductModel = require("../../models/BranchAdminModels/branchAdminProducts");
+const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-
 
 //✅ Create Branch
 const createBranch = async (req, res) => {
-    try {
-        const {
-            branchName,
-            branchManagerName,
+  try {
+    const {
+      branchName,
+      branchManagerName,
       email,
       password,
       phoneNumber,
@@ -40,13 +41,11 @@ const createBranch = async (req, res) => {
     });
 
     await newBranch.save();
-    return res
-      .status(201)
-      .json({
-        message: "Branch created successfully",
-        success: true,
-        newBranch,
-      });
+    return res.status(201).json({
+      message: "Branch created successfully",
+      success: true,
+      newBranch,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -90,11 +89,11 @@ const getAllBranches = async (req, res) => {
       .limit(limit);
 
     // Format servicePinCode as comma-separated string
-    const branches = rawBranches.map(branch => ({
+    const branches = rawBranches.map((branch) => ({
       branchName: branch.branchName,
       branchManagerName: branch.branchManagerName,
       servicePinCode: Array.isArray(branch.servicePinCode)
-        ? branch.servicePinCode.join(', ')
+        ? branch.servicePinCode.join(", ")
         : branch.servicePinCode,
     }));
 
@@ -117,11 +116,10 @@ const getAllBranches = async (req, res) => {
     return res.status(500).json({
       message: "Internal Server Error",
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
-
 
 //✅ Get Branch by id
 const getBranchById = async (req, res) => {
@@ -129,12 +127,15 @@ const getBranchById = async (req, res) => {
     const { id } = req.params;
 
     // Step 1: Find the branch
-    const rawbranch = await branchModel.findById(id)
-    .select({ phoneNumber: 1, servicePinCode: 1, fullAddress: 1, _id: 0 })
-    .lean();
+    const rawbranch = await branchModel
+      .findById(id)
+      .select({ phoneNumber: 1, servicePinCode: 1, fullAddress: 1, _id: 0 })
+      .lean();
 
     if (!rawbranch) {
-      return res.status(404).json({ message: "Branch not found", success: false });
+      return res
+        .status(404)
+        .json({ message: "Branch not found", success: false });
     }
 
     const branch = {
@@ -159,7 +160,9 @@ const getBranchById = async (req, res) => {
 
     // Step 3: Get products
     const products = await ProductModel.find({})
-      .select("productCode brand productName size availableProductQuantity price")
+      .select(
+        "productCode brand productName size availableProductQuantity price"
+      )
       .lean();
 
     const formattedProducts = products.map((product) => ({
@@ -180,7 +183,6 @@ const getBranchById = async (req, res) => {
       availableDeliveryBoys: formattedDeliveryBoys,
       availableProductDetails: formattedProducts,
     });
-
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -191,11 +193,7 @@ const getBranchById = async (req, res) => {
   }
 };
 
-
-
-
-
-//Update Branch
+//✅ Update Branch
 const updateBranch = async (req, res) => {
   try {
     const { id } = req.params;
@@ -212,7 +210,9 @@ const updateBranch = async (req, res) => {
     const existingBranch = await branchModel.findById(id);
 
     if (!existingBranch) {
-      return res.status(404).json({ message: "Branch not found", success: false });
+      return res
+        .status(404)
+        .json({ message: "Branch not found", success: false });
     }
 
     // Merge servicePinCode arrays
@@ -220,24 +220,24 @@ const updateBranch = async (req, res) => {
       const updatedPins = req.body.servicePinCode;
 
       // Merge & remove duplicates
-      const mergedPins = Array.from(new Set([...existingBranch.servicePinCode, ...updatedPins]));
+      const mergedPins = Array.from(
+        new Set([...existingBranch.servicePinCode, ...updatedPins])
+      );
 
       req.body.servicePinCode = mergedPins;
     }
 
     // Update branch
-    const updatedBranch = await branchModel.findByIdAndUpdate(
-      id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const updatedBranch = await branchModel.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
 
     return res.status(200).json({
       message: "Branch updated successfully",
       success: true,
       branch: updatedBranch,
     });
-
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -248,9 +248,7 @@ const updateBranch = async (req, res) => {
   }
 };
 
-
-
-//Delete Branch
+//✅ Delete Branch
 const deleteBranch = async (req, res) => {
   try {
     const { id } = req.params;
@@ -258,7 +256,9 @@ const deleteBranch = async (req, res) => {
 
     const branch = await branchModel.findById(id);
     if (!branch) {
-      return res.status(404).json({ message: "Branch not found", success: false });
+      return res
+        .status(404)
+        .json({ message: "Branch not found", success: false });
     }
 
     // Handle pin code removal
@@ -289,7 +289,6 @@ const deleteBranch = async (req, res) => {
       message: "Branch deleted successfully",
       success: true,
     });
-
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -300,26 +299,25 @@ const deleteBranch = async (req, res) => {
   }
 };
 
-
-// get Available Delivery Boys
+//✅ get Available Delivery Boys
 const availableDeliveryBoys = async (req, res) => {
   try {
     let { page = 1, limit = 10 } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
- 
+
     const totalCount = await DeliveryBoyModel.countDocuments({});
- 
+
     const deliveryBoys = await DeliveryBoyModel.find({})
       .select("userId fullName email phoneNumber address")
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
- 
+
     const totalPages = Math.ceil(totalCount / limit);
     const hasPrevious = page > 1;
     const hasNext = page < totalPages;
- 
+
     // Map and rename fields
     const formattedBoys = deliveryBoys.map((boy) => ({
       userId: boy.userId,
@@ -328,7 +326,7 @@ const availableDeliveryBoys = async (req, res) => {
       phoneNumber: boy.phoneNumber,
       address: boy.address,
     }));
- 
+
     res.status(200).json({
       success: true,
       totalPages,
@@ -342,39 +340,48 @@ const availableDeliveryBoys = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
- 
-// get available products
+
+//✅ get available products
 const availableProducts = async (req, res) => {
   try {
+    const { branchId } = req.params;
     let { page = 1, limit = 10 } = req.query;
+ 
+    // Ensure pagination is a number
     page = parseInt(page);
     limit = parseInt(limit);
  
-    const totalCount = await ProductModel.countDocuments({});
+    // Count total number of products in the given branch
+    const totalCount = await BranchAdminProductModel.countDocuments({
+      branch: branchId,
+    });
  
-    const products = await ProductModel.find({})
-      .select(
-        "productCode brand productName size availableProductQuantity price"
-      )
+    // Pagination logic: Skip and limit applied
+    const data = await BranchAdminProductModel.find({ branch: branchId })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .select("product quantity")
+      .populate("product", "productCode brand productName size price");
  
+    // Calculate pagination details
     const totalPages = Math.ceil(totalCount / limit);
     const hasPrevious = page > 1;
     const hasNext = page < totalPages;
  
-    const formattedProducts = products.map((product) => ({
-      productCode: product.productCode,
-      brand: product.brand,
-      productName: product.productName,
-      size: product.size,
-      availableQuantity: product.availableProductQuantity,
-      price: product.price,
+    const formattedProducts = data.map((item) => ({
+      id: item._id,
+      productCode: item.product.productCode,
+      brand: item.product.brand,
+      productName: item.product.productName,
+      size: item.product.size,
+      availableQuantity: item.quantity,
+      price: item.product.price,
     }));
  
     res.status(200).json({
       success: true,
       totalPages,
+      totalCount,
       currentPage: page,
       previous: hasPrevious,
       next: hasNext,
@@ -386,6 +393,124 @@ const availableProducts = async (req, res) => {
   }
 };
 
+//✅ Add Product Quantity
+const addQuantity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity } = req.body;
+ 
+    // Basic validations
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid branch product ID." });
+    }
+ 
+    if (!quantity || typeof quantity !== "number" || quantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid quantity greater than 0.",
+      });
+    }
+ 
+    // Fetch branch product and associated product in one go
+    const branchProduct = await BranchAdminProductModel.findById(id).populate({
+      path: "product",
+      select: "availableProductQuantity",
+    });
+    if (!branchProduct) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Branch Product Not found" });
+    }
+ 
+    const available = branchProduct.product?.availableProductQuantity ?? 0;
+ 
+    if (quantity > available) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient stock. Only ${available} item(s) available.`,
+      });
+    }
+ 
+    // update both quantities
+    branchProduct.quantity += quantity;
+    branchProduct.product.availableProductQuantity -= quantity;
+ 
+    // Save both documents in parallel
+    await Promise.all([branchProduct.save(), branchProduct.product.save()]);
+ 
+    return res.status(200).json({
+      success: true,
+      message: `${quantity} unit(s) added successfully.`,
+      updatedBranchQuantity: branchProduct.quantity,
+      remainingMainStock: branchProduct.product.availableProductQuantity,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+ 
+//✅ Remove product quantity
+const removeQuantity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity } = req.body;
+ 
+    // Basic validations
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid branch product ID." });
+    }
+ 
+    if (!quantity || typeof quantity !== "number" || quantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid quantity greater than 0.",
+      });
+    }
+ 
+    // Fetch branch product and associated product in one go
+    const branchProduct = await BranchAdminProductModel.findById(id).populate({
+      path: "product",
+      select: "availableProductQuantity",
+    });
+    if (!branchProduct) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Branch Product Not found" });
+    }
+ 
+    if (quantity > branchProduct.quantity) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot remove ${quantity} unit(s). Only ${branchProduct.quantity} available in branch stock.`,
+      });
+    }
+ 
+    // Update both branch and main product stock
+    branchProduct.quantity -= quantity;
+    branchProduct.product.availableProductQuantity += quantity;
+ 
+    // Save both documents in parallel
+    await Promise.all([branchProduct.save(), branchProduct.product.save()]);
+ 
+    return res.status(200).json({
+      success: true,
+      message: `${quantity} unit(s) removed successfully.`,
+      updatedBranchQuantity: branchProduct.quantity,
+      remainingMainStock: branchProduct.product.availableProductQuantity,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+ 
+ 
+
 module.exports = {
   createBranch,
   getAllBranches,
@@ -394,4 +519,6 @@ module.exports = {
   deleteBranch,
   availableDeliveryBoys,
   availableProducts,
+  addQuantity,
+  removeQuantity,
 };
