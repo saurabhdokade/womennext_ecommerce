@@ -482,6 +482,8 @@ const moveToCart = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   addToCart,
   incrementCartItem,

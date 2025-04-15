@@ -5,6 +5,7 @@ const {
     addReview,
     getAllReviews,
     getAverageRatings,
+    getAllReviewsById,
 } = require("../../controllers/UserControllers/reviewController");
  
 const router = express.Router();
@@ -17,8 +18,8 @@ router.post(
     addReview
 );
  
-router.get("/getAllReviews/:productId", getAllReviews);
- 
+router.get("/getAllReviews", getAllReviews);
+router.get("/getAllReviewsById/:productId", getAllReviewsById);
 router.get("/getAverageRatings/:productId", getAverageRatings);
  
 module.exports = router;

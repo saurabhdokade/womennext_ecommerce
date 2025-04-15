@@ -62,17 +62,36 @@ const getDeliveryBoyProfile = async (req, res) => {
  
 //✅ Update Delivery Boy Profile
 const updateProfile = async (req, res) => {
-    try {
-        const updatedProfile = await DeliveryBoy.findByIdAndUpdate(
-            req.deliveryBoy.id,
-            { ...req.body },
-            { new: true }
-        );
+  try {
+    const profileImage = req.files?.image?.[0]?.path;
  
-        res.json(updatedProfile);
-    } catch (error) {
-        res.status(500).json({ message: "Server error.", error: error.message });
+    const updatedFields = { ...req.body };
+ 
+    if (profileImage) {
+      updatedFields.image = profileImage;
     }
+ 
+    const updatedProfile = await DeliveryBoy.findByIdAndUpdate(
+      req.deliveryBoy.id,
+      updatedFields,
+      { new: true }
+    );
+ 
+    if (!updatedProfile) {
+      return res.status(404).json({ message: "Delivery boy not found." });
+    }
+ 
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      deliveryBoy: updatedProfile,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error.",
+      error: error.message,
+    });
+  }
 };
  
 module.exports = { LoginDeliveryBoy, getDeliveryBoyProfile, updateProfile };

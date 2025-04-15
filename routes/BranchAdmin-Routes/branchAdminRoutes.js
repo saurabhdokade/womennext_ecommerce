@@ -1,5 +1,5 @@
 const express = require('express');
-const {register,login,forgotPassword,verifyOtp,resetPassword,logout, getBranchAdminProfile, updateBranchAdminProfile, changeAdminPassAtProfile} =  require('../../controllers/branchAdmin-Controllers/branchAdminController')
+const {register,login,forgotPassword,verifyOtp,resetPassword,logout, getBranchAdminProfile, updateBranchAdminProfile, changeAdminPasswordAtProfile} =  require('../../controllers/branchAdmin-Controllers/branchAdminController')
 const router = express.Router();
 const { upload } = require('../../config/cloudinary');
 const branchAdminAuthMiddleware = require('../../middlewares/branchAdminMiddleware');
@@ -18,6 +18,6 @@ router.post('/logout',logout);
 router.get('/getProfile/:id', branchAdminAuthMiddleware, getBranchAdminProfile);
 
 
-router.put('/change-password/:id', branchAdminAuthMiddleware, changeAdminPassAtProfile);
+router.put('/change-password/:id', branchAdminAuthMiddleware, changeAdminPasswordAtProfile);
  
 module.exports = router;

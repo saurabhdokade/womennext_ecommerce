@@ -2,7 +2,7 @@ const Order = require("../../models/UserModels/orderNow");
 const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const mongoose = require("mongoose");
 
-//✅ Get Order by ID
+//✅ Get Order Details by ID
 const getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -16,15 +16,24 @@ const getOrderById = async (req, res) => {
       return res.status(404).json({ message: "Order not found." });
     }
 
+    // Convert Mongoose document to plain object & remove unwanted fields
+    const {
+      otherReason,
+      cancelledBy,
+      cancelDate,
+      ...filteredOrder
+    } = order.toObject();
+
     return res.status(200).json({
       message: "Order details retrieved successfully",
-      order,
+      order: filteredOrder,
     });
   } catch (error) {
     console.error("Server Error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 //✅ Confirm Order
 const confirmOrder = async (req, res) => {
@@ -383,7 +392,7 @@ const getUserOrders = async (req, res) => {
   }
 };
 
-//✅ Get Order Details
+//✅ Get View Order Details
 const getViewOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;

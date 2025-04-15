@@ -12,14 +12,14 @@ router.patch('/cancel/:orderId', deliveryBoyAuthMiddleware, canceldeliveryBoyOrd
  
  
 //✅ deliveryboy summery payment 
-router.get('/orders/available', getAvailableOrders);
-router.post("/order/:orderId/payment", deliveryBoyAuthMiddleware,confirmPayment);
+router.get('/availableOrders', getAvailableOrders);
+router.post("/:orderId/payment", deliveryBoyAuthMiddleware,confirmPayment);
 router.get("/deliveryboy/summary",  deliveryBoyAuthMiddleware,getDeliveryBoySummary);
 router.get("/order/details/:orderId", deliveryBoyAuthMiddleware, getOrderDetails);
  
  
 //✅ history
-router.get("/order/history",deliveryBoyAuthMiddleware,getDateWiseOrderHistory)
+router.get("/order-history",deliveryBoyAuthMiddleware,getDateWiseOrderHistory)
 router.get('/order-history/:orderId', deliveryBoyAuthMiddleware, getOrderHistoryDetails);
  
 

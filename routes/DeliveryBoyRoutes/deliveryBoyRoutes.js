@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/login", LoginDeliveryBoy);
 router.get("/getProfile", deliveryBoyAuthMiddleware, getDeliveryBoyProfile);
 router.put("/updateProfile", deliveryBoyAuthMiddleware, upload.fields([
-    { name: "profileImage", maxCount: 1 },
+    { name: "image", maxCount: 1 },
 ]), updateProfile);
  
 module.exports = router;

@@ -10,7 +10,7 @@ router.get("/totalOrderCount", getAllOrders);
 router.get("/delivered-income", getAllOrdersDeliveredIncome);
 router.get('/totalProductCount', getProductCount);
 router.get("/top-brands", getTopSellingBrands);
-router.get("/recent-orders/:branchName", getRecentOrders);
+router.get("/recent-orders", getRecentOrders);
 
  
 

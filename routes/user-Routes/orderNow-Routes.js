@@ -11,9 +11,10 @@ router.get("/viewOrder/:orderId", userValidateToken, getViewOrderDetails);
 
 //✅ User Order Status
 router.put("/confirm/:orderId", userValidateToken, confirmOrder);
+router.put("/cancel/:orderId", userValidateToken, cancelOrder);
 router.put("/orderPlaced/:orderId", userValidateToken, orderPlaced);
 router.put("/delivered/:orderId", userValidateToken, deliveredOrder);
-router.put("/cancel/:orderId", userValidateToken, cancelOrder);
+
 
 //✅ User Order Status
 router.put("/packed/:orderId", userValidateToken, packedOrder);
