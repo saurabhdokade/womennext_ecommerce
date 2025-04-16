@@ -137,8 +137,6 @@ const getDeliveryBoyById = async (req, res) => {
   };
   
 
-
-
 //✅ Get Order Details By Delivery Boy ID
 const getOrderDetailsByDeliveryBoyId = async (req, res) => {
   try {
@@ -221,24 +219,6 @@ const getOrderDetailsByDeliveryBoyId = async (req, res) => {
   }
 };
   
-//✅ DropDown Api's For Delivery Boy
-const getDeliveryBoyDropdown = async (req, res) => {
-  try {
-    const deliveryBoys = await DeliveryBoyModel.find().select("fullName -_id");
 
-    const names = deliveryBoys.map((boy) => boy.fullName);
 
-    return res.status(200).json({
-      success: true,
-      deliveryBoys: names,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch delivery boy dropdown",
-      error: error.message,
-    });
-  }
-};
-
-module.exports = { getAllDeliveryBoys, getDeliveryBoyById, getOrderDetailsByDeliveryBoyId, getDeliveryBoyDropdown };
+module.exports = { getAllDeliveryBoys, getDeliveryBoyById, getOrderDetailsByDeliveryBoyId};

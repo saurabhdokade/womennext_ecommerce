@@ -3,7 +3,6 @@ const {
     getAllDeliveryBoys,
     getDeliveryBoyById,
     getOrderDetailsByDeliveryBoyId,
-    getDeliveryBoyDropdown,
 } = require("../../controllers/branchAdmin-Controllers/branchAdminDeliveryBoyController");
 const router = express.Router();
  
@@ -11,6 +10,6 @@ const router = express.Router();
 router.get("/getAllDeliveryBoys", getAllDeliveryBoys);
 router.get("/getDeliveryBoyById/:id", getDeliveryBoyById);
 router.get("/getOrderDetailsByDeliveryBoyId/:id", getOrderDetailsByDeliveryBoyId);
-router.get("/DeliveryBoyDropdown", getDeliveryBoyDropdown);
+
  
 module.exports = router;

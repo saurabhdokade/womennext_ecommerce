@@ -1,6 +1,7 @@
 const statusEnum = [
   "Order Placed",
   "Delivered",
+  "OrderCancelled",
   "Cancelled",
   "Confirmed",
   "In Process",

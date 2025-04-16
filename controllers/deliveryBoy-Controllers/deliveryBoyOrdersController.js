@@ -1,13 +1,14 @@
 const Order = require("../../models/UserModels/orderNow");
 
 
+//✅ Accept delivery Boy Order
 const acceptOrder = async (req, res) => {
     try {
       // Using req.deliveryBoy to access the delivery boy's details
       const deliveryBoyId = req.deliveryBoy.id;
    
       const { orderId } = req.params; // Assuming orderId is passed as a string
-      console.log("Order ID:", orderId);
+      // console.log("Order ID:", orderId);
    
       // Find the order by orderId (orderId is assumed to be the string identifier)
       const order = await Order.findOne({ orderId: orderId.trim() }); // Using findOne for orderId string
@@ -46,56 +47,55 @@ const acceptOrder = async (req, res) => {
     }
   };
    
-   
-   //✅ Cancel delivery boy order
-  const canceldeliveryBoyOrder = async (req, res) => {
+//✅ Cancel delivery boy order
+   const canceldeliveryBoyOrder = async (req, res) => {
     try {
       const deliveryBoyId = req.deliveryBoy.id.toString(); // Corrected: use _id instead of id
       const { orderId } = req.params;
       const { cancelReason, otherReason } = req.body;
-   
+  
       const validReasons = [
-        "I want to change the Product",
-        "Not available on the delivery time",
-        "Price High",
-        "I ordered wrong Product",
+        "Vehicle Mechanical Issue",
+        "Not Feeling Well",
+        "Emergency or Personal Reason",
+        "Rescheduling After Sometime",
         "Other",
       ];
-   
+  
       if (!validReasons.includes(cancelReason)) {
         return res.status(400).json({ message: "Invalid cancellation reason." });
       }
-   
+  
       if (cancelReason === "Other" && (!otherReason || otherReason.trim() === "")) {
         return res.status(400).json({
           message: "Please provide a reason for cancellation.",
         });
       }
-   
-      const order = await Order.findById(orderId);
+  
+      const order = await Order.findOne({ orderId: orderId.trim() });
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }
-   
+  
       if (order.deliveryBoy?.toString() !== deliveryBoyId) {
         return res.status(403).json({
           message: "You are not assigned to this order",
         });
       }
-   
+  
       if (order.status === "Cancelled") {
         return res.status(400).json({ message: "Order is already cancelled." });
       }
-   
+  
       // Unassign delivery boy and mark order as cancelled
       order.deliveryBoy = null;
-      order.deliveryStatus = "Pending"; // Make available for others
+      order.deliveryStatus = "In Process"; // Make available for others
       order.status = "Cancelled";
       order.cancelReason = cancelReason;
       order.otherReason = cancelReason === "Other" ? otherReason : "N/A";
-   
+  
       await order.save({ timestamps: false });
-   
+  
       return res.status(200).json({
         message: "Order cancelled successfully by delivery boy",
         order,
@@ -106,10 +106,8 @@ const acceptOrder = async (req, res) => {
     }
   };
    
-   
-   
-   //✅ Get available orders for delivery boy
-  const getAvailableOrders = async (req, res) => {
+//✅ Get available orders for delivery boy
+   const getAvailableOrders = async (req, res) => {
     try {
       const orders = await Order.find({
         $or: [
@@ -128,36 +126,36 @@ const acceptOrder = async (req, res) => {
           }
         })
         .sort({ createdAt: -1 });
-   
-      console.log("Filtered Orders Found:", orders.length);
-   
+  
+      // console.log("Filtered Orders Found:", orders.length);
+  
       const formattedOrders = orders.map(order => {
         const firstItem = order.items?.[0];
         const product = firstItem?.product;
-   
+  
         // Buyer name from order.user
         const buyerName = order.user?.fullName || "N/A";
-   
+  
         // Seller name (product's creator OR branch name fallback)
         const sellerName =
           product?.user?.fullName || order.branchInfo?.branchName || "Seller";
-   
+  
         // Product Info
         const productName = product?.productName || "N/A";
         const productImage = product?.image || "";
-   
+  
         // Google Maps Address
         const address = order.deliveryAddress;
         const fullAddress = `${address?.street || ""}, ${address?.city || ""}, ${address?.zipCode || ""}`;
         const encodedAddress = encodeURIComponent(fullAddress);
         const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-   
+  
         return {
           orderId: order.orderId,
           productName,
           productImage,
           totalPrice: order.totalAmount,
-          orderDate: order.createdAt,
+          orderDate: new Date(order.createdAt).toLocaleDateString("en-GB"),
           buyerName,
           sellerName,
           yourEarning: `₹${(order.totalAmount * 0.10).toFixed(0)}`,
@@ -165,7 +163,7 @@ const acceptOrder = async (req, res) => {
           status: order.deliveryStatus || order.status || "In Process"
         };
       });
-   
+  
       res.status(200).json({ orders: formattedOrders });
     } catch (error) {
       console.error("Error fetching orders:", error);
