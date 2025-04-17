@@ -1,64 +1,57 @@
 const Order = require("../../models/UserModels/orderNow");
-
+const mongoose = require("mongoose")
 
 //✅ Accept delivery Boy Order
 const acceptOrder = async (req, res) => {
-    try {
-      // Using req.deliveryBoy to access the delivery boy's details
-      const deliveryBoyId = req.deliveryBoy.id;
-   
-      const { orderId } = req.params; // Assuming orderId is passed as a string
-      // console.log("Order ID:", orderId);
-   
-      // Find the order by orderId (orderId is assumed to be the string identifier)
-      const order = await Order.findOne({ orderId: orderId.trim() }); // Using findOne for orderId string
-   
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-   
-      // Check if the order has already been accepted by a delivery boy
-      if (order.deliveryBoy) {
-        return res.status(400).json({
-          message: "Order already accepted",
-          deliveryBoy: order.deliveryBoy,
-        });
-      }
-   
-      // Assign the current delivery boy to the order
-      order.deliveryBoy = deliveryBoyId;
-   
-      // Set the delivery status to "Accepted"
-      order.deliveryStatus = "Accepted";
-   
-      // Save the order with updated information
-      await order.save();
-   
-      // Populate the delivery boy information in the response
-      await order.populate("deliveryBoy");
-   
-      res.status(200).json({
-        message: "Order accepted successfully",
-        order,
-      });
-    } catch (error) {
-      console.error("Accept order error:", error);
-      res.status(500).json({ message: "Server error" });
+  try {
+    const deliveryBoyId = req.deliveryBoy?.id;
+    const { id } = req.params;
+ 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Order ID" });
     }
-  };
-   
-//✅ Cancel delivery boy order
-   const canceldeliveryBoyOrder = async (req, res) => {
+ 
+    const order = await Order.findById(id);
+ 
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+ 
+    if (order.deliveryBoy && order.deliveryStatus === "Accepted") {
+      return res.status(400).json({
+        message: "Order already accepted",
+        deliveryBoy: order.deliveryBoy,
+      });
+    }
+ 
+    order.deliveryBoy = deliveryBoyId;
+    order.deliveryStatus = "Accepted";
+ 
+    await order.save();
+    await order.populate("deliveryBoy");
+ 
+    return res.status(200).json({
+      message: "Order accepted successfully",
+      order,
+    });
+  } catch (error) {
+    console.error("Accept order error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+ 
+//✅ Cancel delivery Boy Order
+  const canceldeliveryBoyOrder = async (req, res) => {
     try {
-      const deliveryBoyId = req.deliveryBoy.id.toString(); // Corrected: use _id instead of id
-      const { orderId } = req.params;
+      const deliveryBoyId = req.deliveryBoy.id.toString(); 
+      const { id } = req.params;
       const { cancelReason, otherReason } = req.body;
   
       const validReasons = [
-        "Vehicle Mechanical Issue",
-        "Not Feeling Well",
-        "Emergency or Personal Reason",
-        "Rescheduling After Sometime",
+        "I want to change the Product",
+        "Not available on the delivery time",
+        "Price High",
+        "I ordered wrong Product",
         "Other",
       ];
   
@@ -72,90 +65,85 @@ const acceptOrder = async (req, res) => {
         });
       }
   
-      const order = await Order.findOne({ orderId: orderId.trim() });
+      const order = await Order.findById(id);
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
-      }
-  
-      if (order.deliveryBoy?.toString() !== deliveryBoyId) {
-        return res.status(403).json({
-          message: "You are not assigned to this order",
-        });
       }
   
       if (order.status === "Cancelled") {
         return res.status(400).json({ message: "Order is already cancelled." });
       }
   
-      // Unassign delivery boy and mark order as cancelled
-      order.deliveryBoy = null;
-      order.deliveryStatus = "In Process"; // Make available for others
-      order.status = "Cancelled";
+      // Update cancellation details
+      order.deliveryBoy = null;                         
+      order.deliveryStatus = "In Process";             
+      order.status = "Cancelled";                      
       order.cancelReason = cancelReason;
       order.otherReason = cancelReason === "Other" ? otherReason : "N/A";
   
-      await order.save({ timestamps: false });
+      await order.save({ timestamps: false });          
   
       return res.status(200).json({
         message: "Order cancelled successfully by delivery boy",
         order,
       });
+  
     } catch (error) {
       console.error("Cancel delivery order error:", error);
       return res.status(500).json({ message: "Server error", error: error.message });
     }
   };
-   
-//✅ Get available orders for delivery boy
-   const getAvailableOrders = async (req, res) => {
+  
+  //✅ Get available orders for delivery boy
+  const getAvailableOrders = async (req, res) => {
     try {
+      const deliveryBoyId = req.deliveryBoy?.id;
+  
+      if (!deliveryBoyId) {
+        return res.status(401).json({ success: false, message: "Unauthorized access" });
+      }
+  
       const orders = await Order.find({
+        deliveryBoy: deliveryBoyId, 
         $or: [
           { status: { $regex: /^In Process$/i } },
-          { deliveryStatus: { $regex: /^(In Process|Cancelled)$/i } }
+          { deliveryStatus: { $regex: /^(In Process|Pending)$/i } }
         ]
       })
-        .populate("user", "fullName") // Buyer
-        .populate("branchInfo", "branchName fullAddress") // Seller (Branch)
+        .populate("user", "fullName")
+        .populate("branchInfo", "branchName fullAddress")
         .populate({
           path: "items.product",
           select: "productName image user",
           populate: {
             path: "user",
-            select: "fullName" // Product's creator
+            select: "fullName"
           }
         })
         .sort({ createdAt: -1 });
-  
-      // console.log("Filtered Orders Found:", orders.length);
   
       const formattedOrders = orders.map(order => {
         const firstItem = order.items?.[0];
         const product = firstItem?.product;
   
-        // Buyer name from order.user
         const buyerName = order.user?.fullName || "N/A";
-  
-        // Seller name (product's creator OR branch name fallback)
         const sellerName =
           product?.user?.fullName || order.branchInfo?.branchName || "Seller";
-  
-        // Product Info
         const productName = product?.productName || "N/A";
         const productImage = product?.image || "";
   
-        // Google Maps Address
         const address = order.deliveryAddress;
         const fullAddress = `${address?.street || ""}, ${address?.city || ""}, ${address?.zipCode || ""}`;
         const encodedAddress = encodeURIComponent(fullAddress);
         const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
   
         return {
+          id: order.id,
           orderId: order.orderId,
           productName,
           productImage,
           totalPrice: order.totalAmount,
-          orderDate: new Date(order.createdAt).toLocaleDateString("en-GB"),
+          orderDate: order.createdAt,
           buyerName,
           sellerName,
           yourEarning: `₹${(order.totalAmount * 0.10).toFixed(0)}`,
@@ -164,20 +152,90 @@ const acceptOrder = async (req, res) => {
         };
       });
   
-      res.status(200).json({ orders: formattedOrders });
+      res.status(200).json({ success: true, orders: formattedOrders });
     } catch (error) {
-      console.error("Error fetching orders:", error);
-      res.status(500).json({ message: "Error fetching orders", error: error.message });
+      console.error("Error fetching available orders:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching available orders",
+        error: error.message
+      });
     }
   };
-   
-
-   //✅ Confirm payment
-  const confirmPayment = async (req, res) => {
+  
+  const getavaliableOrderDetails = async (req, res) => {
     try {
-      const { orderId } = req.params;
-
-      const order = await Order.findOne({ orderId: orderId.trim() })
+      const deliveryBoyId = req.deliveryBoy?.id;
+      const { id: orderId } = req.params; // order ID from route parameter
+  
+      if (!deliveryBoyId) {
+        return res.status(401).json({ success: false, message: "Unauthorized access" });
+      }
+  
+      const order = await Order.findOne({
+        _id: orderId,
+        deliveryBoy: deliveryBoyId
+      })
+        .populate("user", "fullName")
+        .populate("branchInfo", "branchName fullAddress")
+        .populate({
+          path: "items.product",
+          select: "productName image user",
+          populate: {
+            path: "user",
+            select: "fullName"
+          }
+        });
+  
+      if (!order) {
+        return res.status(404).json({ success: false, message: "Order not found" });
+      }
+  
+      const firstItem = order.items?.[0];
+      const product = firstItem?.product;
+  
+      const buyerName = order.user?.fullName || "N/A";
+      const sellerName =
+        product?.user?.fullName || order.branchInfo?.branchName || "Seller";
+      const productName = product?.productName || "N/A";
+      const productImage = product?.image || "";
+      const price = order.totalAmount || 0;
+  
+      const address = order.deliveryAddress;
+      const fullAddress = `${address?.street || ""}, ${address?.city || ""}, ${address?.zipCode || ""}`;
+      const encodedAddress = encodeURIComponent(fullAddress);
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress};`
+  
+      const orderDetails = {
+        orderId: order.orderId,
+        productName,
+        productImage,
+        price,
+        date:new Date(order.createdAt).toLocaleDateString('en-GB'),
+        buyerName,
+        sellerName,
+        yourEarning:` ₹${(price * 0.10).toFixed(0)}`,
+        seeLocationUrl: googleMapsUrl,
+        status: order.deliveryStatus || order.status || "In Process"
+      };
+  
+      res.status(200).json({ success: true, order: orderDetails });
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching order details",
+        error: error.message
+      });
+    }
+  };
+ 
+   //✅ Confirm payment
+const confirmPayment = async (req, res) => {
+    try {
+      const { id } = req.params;
+ 
+      const order = await Order.findById(id)
         .populate("user")
         .populate("items.product");
    
@@ -185,12 +243,10 @@ const acceptOrder = async (req, res) => {
         return res.status(404).json({ message: "Order not found" });
       }
    
-      // ✅ Check if user accepted the delivery
       if (order.deliveryStatus !== "Accepted") {
         return res.status(400).json({ message: "User has not accepted the delivery yet." });
       }
    
-      // ✅ Handle payment logic
       let isCash = order.paymentMethod === "Cash" || order.paymentMethod === "COD";
    
       if (isCash) {
@@ -246,7 +302,6 @@ const acceptOrder = async (req, res) => {
   //✅ Get delivery boy summary
   const getDeliveryBoySummary = async (req, res) => {
     try {
-      // Accessing the delivery boy ID from the authenticated user (via middleware)
       const deliveryBoyId = req.deliveryBoy.id;
    
       const todayStart = new Date();
@@ -255,29 +310,25 @@ const acceptOrder = async (req, res) => {
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
    
-      // Fetch all delivered orders for this delivery boy
       const allDeliveredOrders = await Order.find({
         deliveryBoy: deliveryBoyId,
         deliveryStatus: "Delivered"
       }).populate("items.product");
    
-      // Total delivery boy earning = 10% of each order totalAmount
       const totalEarnings = allDeliveredOrders.reduce((sum, order) => {
         return sum + (order.totalAmount * 0.10 || 0);
       }, 0);
    
-      // Today's delivered orders
       const todayDeliveredOrders = allDeliveredOrders.filter(order =>
         order.updatedAt >= todayStart && order.updatedAt <= todayEnd
       );
    
-      // Today's earnings = 10% of today's delivered orders
       const todayEarnings = todayDeliveredOrders.reduce((sum, order) => {
         return sum + (order.totalAmount * 0.10 || 0);
       }, 0);
    
-      // Prepare list of delivered orders (for UI cards)
       const detailedOrders = allDeliveredOrders.map(order => ({
+        id:order.id,
         orderId: order.orderId,
         productName: order.items[0]?.product?.productName || "N/A",
         image: order.items[0]?.product?.image || null,
@@ -304,22 +355,20 @@ const acceptOrder = async (req, res) => {
    //✅ Get order details
   const getOrderDetails = async (req, res) => {
     try {
-      const { orderId } = req.params;
+      const { id } = req.params;
    
-      // Fetch order with populated fields for product, user, and seller details
-      const order = await Order.findOne({ orderId })
-        .populate("items.product") // Populate product details
-        .populate("user", "fullName phoneNumber") // Populate buyer details
-        .populate("items.product.seller", "name"); // Assuming the product has a reference to the branch/seller
+      const order = await Order.findById(id)
+        .populate("items.product") 
+        .populate("user", "fullName phoneNumber") 
+        .populate("items.product.seller", "name"); 
    
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }
    
       const product = order.items[0]?.product;
-      const address = order.deliveryAddress || {}; // 👈 Pull from deliveryAddress
+      const address = order.deliveryAddress || {}; 
    
-      // Assuming the seller name is fetched from the populated seller field in the product
       const sellerName = product?.seller?.name || "N/A"; 
    
       const orderDetails = {
@@ -393,6 +442,7 @@ const acceptOrder = async (req, res) => {
         totalDelivered++;
    
         const orderCard = {
+          id:order.id,
           orderId: order.orderId,
           deliveredOn: `Delivered on ${dateKey}`,
           customerName: order.user?.name || "Customer",
@@ -428,11 +478,11 @@ const acceptOrder = async (req, res) => {
    // ✅ Get order history details
   const getOrderHistoryDetails = async (req, res) => {
     try {
-      const { orderId } = req.params;
+      const { id } = req.params;
       const deliveryBoyId = req.deliveryBoy._id; // ✅ Corrected this line
    
       const order = await Order.findOne({
-        _id: orderId,
+        _id: id,
         deliveryBoy: deliveryBoyId,
         deliveryStatus: { $in: ["Accepted", "Delivered"] }
       })
@@ -464,7 +514,7 @@ const acceptOrder = async (req, res) => {
       const buyerName = order.user?.fullName || "Customer";
    
       const response = {
-        orderId: order._id,
+        orderId: order.orderId,
         productName: `${order.items[0]?.product?.productName || "Product"}${order.items[0]?.quantity ? `, Pack of ${order.items[0].quantity}` : ""}`,
         productImage: order.items[0]?.product?.image || null,
         buyerName: buyerName,
@@ -488,9 +538,12 @@ const acceptOrder = async (req, res) => {
     acceptOrder,
     canceldeliveryBoyOrder,
     getAvailableOrders,
+    getavaliableOrderDetails,
     confirmPayment,
     getDeliveryBoySummary,
     getOrderDetails,
     getDateWiseOrderHistory,
     getOrderHistoryDetails
   };  
+ 
+ 

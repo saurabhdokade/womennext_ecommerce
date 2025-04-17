@@ -1,6 +1,6 @@
 const Order = require("../../models/UserModels/orderNow");
-const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
-const userModel = require("../../models/UserModels/User");
+// const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
+// const userModel = require("../../models/UserModels/User");
 const mongoose = require("mongoose");
 
 //✅ Get Order Details by ID
@@ -74,158 +74,6 @@ const confirmOrder = async (req, res) => {
   }
 };
   
-
-//✅ Delivered Order
-const deliveredOrder = async (req, res) => {
-  try {
-    const orderId = req.params.orderId;
-
-    // Step 1: Find the order with populated fields
-    const order = await Order.findById(orderId)
-      .populate("deliveryBoy", "fullName email address phoneNumber image")
-      .populate("items.product", "productName price");
-
-    if (!order) {
-      return res.status(404).json({ message: "Order not found." });
-    }
-
-    if (order.status === "Delivered") {
-      return res.status(400).json({ message: "Order is already delivered." });
-    }
-
-    order.status = "Delivered";
-    //Removed tracking from base order object
-    const responseOrder = order.toObject();
-
-    if (responseOrder.orderDate) {
-      const dateObj = new Date(responseOrder.orderDate);
-      const formattedDate = `${String(dateObj.getDate()).padStart(2, "0")}/${String(dateObj.getMonth() + 1).padStart(2, "0")}/${dateObj.getFullYear()}`;
-      responseOrder.orderDate = formattedDate;
-    }
-
-    delete responseOrder.deliveryBoy; 
-    delete responseOrder.otherReason;
-    delete responseOrder.cancelledBy;
-    delete responseOrder.cancelDate;
-    delete responseOrder.createdAt;
-    delete responseOrder.updatedAt;
-
-    await order.save();
-    // Step 4: Get previous delivered orders of this delivery boy
-    let formattedPreviousOrders = [];
-    if (order.deliveryBoy && order.deliveryBoy._id) {
-      const previousOrders = await Order.find({
-        deliveryBoy: order.deliveryBoy._id,
-        status: "Delivered",
-        _id: { $ne: order._id },
-      })
-        .populate("items.product", "productName price")
-        .select("orderDate items totalAmount deliveryAddress");
-
-      formattedPreviousOrders = previousOrders.map((ord) => ({
-        orderDate: ord.orderDate,
-        deliveryAddress: ord.deliveryAddress,
-        totalAmount: ord.totalAmount,
-        items: ord.items.map((item) => ({
-          productName: item.product?.productName || "N/A",
-          quantity: item.quantity,
-          price: item.price,
-        })),
-      }));
-    }
-
-    // Step 5: Final merged response
-    return res.status(200).json({
-      message: "Order delivered successfully",
-      order: responseOrder,
-      // deliveryBoy: order.deliveryBoy ? {
-      //   fullName: order.deliveryBoy.fullName,
-      //   email: order.deliveryBoy.email,
-      //   address: order.deliveryBoy.address,
-      //   phoneNumber: order.deliveryBoy.phoneNumber,
-      //   image: order.deliveryBoy.image
-      // } : null,
-      // previousOrders: formattedPreviousOrders
-    });
-  } catch (error) {
-    console.error("Server Error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-//✅ Ongoing Placed
-const orderPlaced = async (req, res) => {
-  try {
-    const orderId = req.params.orderId;
-
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found." });
-    }
-
-    if (order.status === "Order Placed") {
-      return res.status(400).json({ message: "Order is already Placed." });
-    }
-
-    order.status = "Order Placed";
-    await order.save();
-
-    const {
-      otherReason,
-      cancelledBy,
-      cancelDate,
-      ...filteredOrder
-    } = order.toObject();
-
-    const formattedOrderDate = new Date(order.orderDate).toLocaleDateString('en-GB');
-    return res.status(200).json({
-      message: "Your Order Placed Successfully",
-      order:{
-        ...filteredOrder,
-        orderDate: formattedOrderDate,
-      },
-    });
-  } catch (error) {
-    console.error("Server Error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
- 
-
-//✅ Out for Delivery
-const outForDelivery = async (req, res) => {
-  try {
-    const orderId = req.params.orderId;
-
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found." });
-    }
-
-    order.status = "Out for Delivery";
-    const {
-      otherReason,
-      cancelledBy,
-      cancelDate,
-      ...filteredOrder
-    } = order.toObject();
-
-    const formattedOrderDate = new Date(order.orderDate).toLocaleDateString('en-GB');
-
-    await order.save();
-
-    return res.status(200).json({
-      message: "Order out for delivery successfully",
-      order:{
-        ...filteredOrder,
-        orderDate: formattedOrderDate,
-      }
-    });
-  } catch (error) {
-    console.error("Server Error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
 
 //✅ Cancel Order
 const cancelOrder = async (req, res) => {
@@ -391,13 +239,91 @@ const getViewOrderDetails = async (req, res) => {
   }
 };
 
+
+//✅ trackOrder function
+// Utility function to format date and time
+const formatDateTime = (date) => {
+  const optionsDate = {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  };
+ 
+  const optionsTime = {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  };
+ 
+  return {
+    date: new Date(date).toLocaleDateString("en-GB", optionsDate), 
+    time: new Date(date).toLocaleTimeString("en-GB", optionsTime), 
+  };
+};
+
+const trackOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+ 
+    const order = await Order.findById(id)
+      .populate("items.product")
+      .populate("user");
+ 
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+ 
+    // Timeline generation
+    const timeline = [];
+ 
+    // 1. Order Placed
+    const placed = formatDateTime(order.createdAt);
+    timeline.push({
+      status: "Order Placed",
+      date: placed.date,
+      time: placed.time,
+    });
+ 
+    // 2. Out For Delivery (includes the assignment to delivery boy)
+    if (order.outForDeliveryAt) {
+      const outForDelivery = formatDateTime(order.outForDeliveryAt || order.updatedAt);
+      timeline.push({
+        status: "Out For Delivery",
+        date: outForDelivery.date,
+        time: outForDelivery.time,
+      });
+    }
+ 
+    // 3. Delivered
+    if (order.deliveryStatus === "Delivered") {
+      const delivered = formatDateTime(order.deliveredAt || order.updatedAt);
+      timeline.push({
+        status: "Delivered",
+        date: delivered.date,
+        time: delivered.time,
+      });
+    }
+ 
+    return res.status(200).json({
+      orderId: order.orderId,
+      productImage: order.items[0]?.product?.image?.[0] || "",
+      productName: order.items[0]?.product?.productName || order.items[0]?.product?.name || "Product Name",
+      quantity: order.items[0]?.quantity || 1,
+      totalPrice: order.totalAmount,
+      deliveryStatus: order.deliveryStatus,
+      timeline,
+    });
+ 
+  } catch (err) {
+    console.error("Error in trackOrder:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 module.exports = {
   getOrderById,
   confirmOrder,
-  deliveredOrder,
-  orderPlaced,
-  outForDelivery,
   cancelOrder,
   getUserOrders,
   getViewOrderDetails,
+  trackOrder,
 };

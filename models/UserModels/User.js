@@ -34,6 +34,10 @@ const userSchema = new Schema(
         otpExpiresAt: {
             type: Date,
         },
+        isVerified: {
+            type: Boolean,
+            default: false,
+        },
         branchInfo: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Branches",

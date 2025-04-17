@@ -280,10 +280,20 @@ const assignDelivery = async (req, res) => {
       });
     }
  
-    await Order.updateOne(
-      { _id: id },
-      { $set: { deliveryBoy: deliveryBoyId } }
-    );
+    // Set the current time for when the order is assigned to the delivery boy (Out For Delivery)
+    const updateData = {
+      $set: {
+        deliveryBoy: deliveryBoyId,
+        outForDeliveryAt: new Date(),  // Set the current time when assigned for delivery
+      },
+    };
+ 
+    // If the order is already marked as delivered, update deliveredAt timestamp
+    if (order.deliveryStatus === "Delivered") {
+      updateData.$set.deliveredAt = new Date(); // Update deliveredAt if the order is already delivered
+    }
+ 
+    await Order.updateOne({ _id: id }, updateData);
  
     return res.status(200).json({
       success: true,

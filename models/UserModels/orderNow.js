@@ -6,9 +6,6 @@ const statusEnum = [
   "Confirmed",
   "In Process",
   "Order Confirmed",
-  "Packed the Product",
-  "Arrived in the Warehouse",
-  "Nearby Courier Facility",
   "Out for Delivery",
 ];
  
@@ -129,6 +126,10 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Branches",
     },
+    outForDeliveryAt: { 
+      type: Date, 
+      default: null 
+    }, 
   },
   { timestamps: true }
 );

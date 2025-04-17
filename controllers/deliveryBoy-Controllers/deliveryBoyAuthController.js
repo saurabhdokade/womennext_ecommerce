@@ -44,7 +44,7 @@ const LoginDeliveryBoy = async (req, res) => {
     }
   };
   
-  module.exports = { LoginDeliveryBoy };
+
  
 //✅ Get Delivery Boy Profile
 const getDeliveryBoyProfile = async (req, res) => {

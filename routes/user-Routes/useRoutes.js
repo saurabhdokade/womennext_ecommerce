@@ -6,6 +6,7 @@ const {
     getUser,
     updateUser,
     logout,
+    register,
 } = require("../../controllers/UserControllers/userController");
 const { userValidateToken } = require("../../middlewares/userAuthMiddleware");
 const { upload } = require("../../config/cloudinary");
@@ -13,6 +14,7 @@ const { upload } = require("../../config/cloudinary");
 const router = express.Router();
  
 //✅ User Routes
+router.post("/register", register);
 router.post("/login", login);
 router.post("/verify-otp", verifyOtp);
 router.post("/resend-otp", resendOtp);
