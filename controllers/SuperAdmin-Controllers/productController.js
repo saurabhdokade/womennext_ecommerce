@@ -138,28 +138,12 @@ const getProductById = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { productCode } = req.body;
-
-    // Check if productCode already exists in other products
-    if (productCode) {
-      const existingProduct = await ProductModel.findOne({
-        productCode,
-        _id: { $ne: id }, // exclude current product
-      });
-
-      if (existingProduct) {
-        return res.status(400).json({
-          success: false,
-          message: "Product code already exists in another product",
-        });
-      }
-    }
 
     let imagePaths = [];
     if (req.files && req.files.length > 0) {
       imagePaths = req.files.map((file) => file.path);
     }
-
+    
     const updatedProduct = await ProductModel.findByIdAndUpdate(
       id,
       {
@@ -168,14 +152,14 @@ const updateProduct = async (req, res) => {
       },
       { new: true, runValidators: true }
     );
-
+   
     if (!updatedProduct) {
       return res.status(404).json({
         success: false,
         message: "Product not found",
       });
     }
-
+    
     return res.status(200).json({
       success: true,
       message: "Product updated successfully",
