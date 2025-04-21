@@ -1,57 +1,77 @@
 const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const Order = require("../../models/UserModels/orderNow");
 const mongoose = require("mongoose");
- 
+ const branchModel = require("../../models/SuperAdminModels/branch");
+
 //✅ Get All Delivery Boys
 const getAllDeliveryBoys = async (req, res) => {
-    try {
-        let { page = 1, limit = 10, search = "", sortOrder } = req.query;
-        page = parseInt(page);
-        limit = parseInt(limit);
-
-        // Determine sorting order (default to no sorting if sortOrder is not provided)
-        let sortOption = {};
-        if (sortOrder === "asc" || sortOrder === "desc") {
-            sortOption.fullName = sortOrder === "desc" ? -1 : 1;
-        }
-
-        // Create a search filter
-        const searchFilter = {
-            $or: [
-                { fullName: { $regex: search, $options: "i" } },
-                { email: { $regex: search, $options: "i" } },
-                { userId: { $regex: search, $options: "i" } },
-            ],
-        };
-
-        const totalDeliveryBoys = await DeliveryBoyModel.countDocuments(
-            searchFilter
-        );
-        const deliveryBoys = await DeliveryBoyModel.find(searchFilter)
-            .select("image fullName phoneNumber userId")
-            .sort(sortOption) // Apply sorting only if provided
-            .skip((page - 1) * limit)
-            .limit(limit);
-
-        const totalPages = Math.ceil(totalDeliveryBoys / limit);
-        const hasPrevious = page > 1;
-        const hasNext = page < totalPages;
-
-        res.status(200).json({
-            success: true,
-            totalDeliveryBoys,
-            totalPages,
-            currentPage: page,
-            previous: hasPrevious,
-            next: hasNext,
-            deliveryBoys,
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ success: false, message: error.message });
-    }
-};
+  try {
+    let { page = 1, limit = 10, search = "", sortOrder } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
  
+    // Determine sorting order (default to no sorting if sortOrder is not provided)
+    const sortOption =
+      sortOrder === "asc" || sortOrder === "desc"
+        ? { fullName: sortOrder === "asc" ? 1 : -1 }
+        : {};
+ 
+    const branchId = req.branchAdmin?.branch;
+    if (!branchId) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access to branch data.",
+      });
+    }
+    const branchInfo = await branchModel
+      .findById(branchId)
+      .select("branchName");
+ 
+    if (!branchInfo) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found.",
+      });
+    }
+    // Build query filter
+    const query = {
+      branch: branchInfo.branchName,
+    };
+ 
+    if (search) {
+      const regex = new RegExp(search, "i");
+      query.$or = [
+        { fullName: { $regex: regex } },
+        { email: { $regex: regex } },
+        { userId: { $regex: regex } },
+      ];
+    }
+ 
+    const totalDeliveryBoys = await DeliveryBoyModel.countDocuments(query);
+    const deliveryBoys = await DeliveryBoyModel.find(query)
+      .select("image fullName phoneNumber userId")
+      .sort(sortOption) // Apply sorting only if provided
+      .skip((page - 1) * limit)
+      .limit(limit);
+ 
+    const totalPages = Math.ceil(totalDeliveryBoys / limit);
+    const hasPrevious = page > 1;
+    const hasNext = page < totalPages;
+ 
+    res.status(200).json({
+      success: true,
+      totalDeliveryBoys,
+      totalPages,
+      currentPage: page,
+      previous: hasPrevious,
+      next: hasNext,
+      deliveryBoys,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 //✅ Get Delivery Boy By ID
 const getDeliveryBoyById = async (req, res) => {
     try {
