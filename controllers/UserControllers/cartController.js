@@ -350,13 +350,13 @@ const BuyOrderFromCart = async (req, res) => {
  
     // Step 5: Save Notification for Branch Admin
     const populatedOrder = await Order.findById(newOrder._id).populate("user", "fullName image");
-
-
+ 
+ 
     // Step 5: Save Notification for Branch Admin
     const notification = new branchAdminNotificationModel({
       branchAdminId: branchAdminId,
       title: "New Order Placed",
-      message:`Order #${orderId} has been placed for delivery.`,
+      message: `Order #${orderId} has been placed for delivery.`,
       isRead: false,
       createdAt: new Date(),
       id: populatedOrder.user._id,
@@ -365,6 +365,15 @@ const BuyOrderFromCart = async (req, res) => {
     });
  
     await notification.save();
+ 
+    const userNotification = new userNotificationModel({
+      userId: userId,
+      title: "Order Placed",
+      message: "Your order has been placed successfully",
+      image: productImage
+    });
+ 
+    await userNotification.save();
  
     // Step 6: Clear Cart
     cart.items = [];
@@ -387,7 +396,6 @@ const BuyOrderFromCart = async (req, res) => {
         createdAt: newOrder.createdAt,
         updatedAt: newOrder.updatedAt,
       },
-      status: newOrder.status,
       emergencyDelivery: emergency
         ? "₹20 Emergency Delivery Charges applied"
         : "No Emergency Delivery Charges",

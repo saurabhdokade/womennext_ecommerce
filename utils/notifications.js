@@ -63,7 +63,7 @@ const fetchNotifications = async (
             .find({ [userIdField]: userId, isRead })
             .populate({
                 path: userIdField,
-                select: 'title message fullName image createdAt'
+                select: 'title message fullName image isRead createdAt'
             })
             .sort({ createdAt: -1 })
             .exec();

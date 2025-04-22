@@ -1,5 +1,6 @@
 const Order = require("../../models/UserModels/orderNow");
 const mongoose = require("mongoose")
+const userNotificationModel = require("../../models/UserModels/userNotification");
 
 //✅ Accept delivery Boy Order
 const acceptOrder = async (req, res) => {
@@ -11,7 +12,7 @@ const acceptOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid Order ID" });
     }
  
-    const order = await Order.findById(id);
+    const order = await Order.findById(id).populate("user items.product");
  
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -30,6 +31,15 @@ const acceptOrder = async (req, res) => {
     await order.save();
     await order.populate("deliveryBoy");
  
+    const userNotification = new userNotificationModel({
+      userId: order.user._id,
+      title: "Out for Delivery",
+      message: "Out for delivery",
+      image: order.items?.[0]?.product?.image?.[0] || null
+    });
+ 
+    await userNotification.save();
+ 
     return res.status(200).json({
       message: "Order accepted successfully",
       order,
@@ -39,6 +49,7 @@ const acceptOrder = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+ 
  
 //✅ Cancel delivery Boy Order
   const canceldeliveryBoyOrder = async (req, res) => {
@@ -231,10 +242,10 @@ const acceptOrder = async (req, res) => {
   };
  
    //✅ Confirm payment
-const confirmPayment = async (req, res) => {
+   const confirmPayment = async (req, res) => {
     try {
       const { id } = req.params;
- 
+   
       const order = await Order.findById(id)
         .populate("user")
         .populate("items.product");
@@ -259,6 +270,14 @@ const confirmPayment = async (req, res) => {
    
       await order.save();
    
+      const userNotification = new userNotificationModel({
+        userId: order.user._id,
+        title: "Order Delivered",
+        message: "Your order has been delivered successfully",
+        image: order.items?.[0]?.product?.image?.[0] || null
+      });
+   
+      await userNotification.save();
       const responseData = {
         orderId: order.orderId,
         amount: order.totalAmount,
