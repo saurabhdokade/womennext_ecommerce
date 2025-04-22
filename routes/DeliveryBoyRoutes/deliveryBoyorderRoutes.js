@@ -16,7 +16,7 @@ router.get('/availableOrders', deliveryBoyAuthMiddleware, getAvailableOrders);
 router.get("/:id/details", deliveryBoyAuthMiddleware, getavaliableOrderDetails);
 router.post("/:id/payment", deliveryBoyAuthMiddleware,confirmPayment);
 router.get("/deliveryboy/summary",  deliveryBoyAuthMiddleware,getDeliveryBoySummary);
-router.get("/order/details/:id", deliveryBoyAuthMiddleware, getOrderDetails);
+router.get("/details/:id", deliveryBoyAuthMiddleware, getOrderDetails);
  
  
 //✅ history

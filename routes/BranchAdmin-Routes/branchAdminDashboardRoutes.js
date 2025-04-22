@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const {getTopSellingBrands, getRecentOrders,getProductCount,getAllOrdersDeliveredIncome,getAllDelieveryBoys,getAllOrders} = require("../../controllers/branchAdmin-Controllers/branchAdminDashboardController");
+const {getTopSellingBrands,getProductCount,getAllOrdersDeliveredIncome,getAllDelieveryBoys,getAllOrders, getRecentTrackedOrders} = require("../../controllers/branchAdmin-Controllers/branchAdminDashboardController");
+const branchAdminAuthMiddleware = require("../../middlewares/branchAdminMiddleware");
  
 
 
@@ -10,7 +11,7 @@ router.get("/totalOrderCount", getAllOrders);
 router.get("/delivered-income", getAllOrdersDeliveredIncome);
 router.get('/totalProductCount', getProductCount);
 router.get("/top-brands", getTopSellingBrands);
-router.get("/recent-orders", getRecentOrders);
+router.get("/recent-orders",branchAdminAuthMiddleware,getRecentTrackedOrders);
 
  
 

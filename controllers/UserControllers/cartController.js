@@ -387,6 +387,7 @@ const BuyOrderFromCart = async (req, res) => {
         createdAt: newOrder.createdAt,
         updatedAt: newOrder.updatedAt,
       },
+      status: newOrder.status,
       emergencyDelivery: emergency
         ? "₹20 Emergency Delivery Charges applied"
         : "No Emergency Delivery Charges",

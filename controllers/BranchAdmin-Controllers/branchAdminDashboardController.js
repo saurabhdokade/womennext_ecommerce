@@ -2,7 +2,7 @@ const Order = require("../../models/UserModels/orderNow");
 const branchModel = require("../../models/SuperAdminModels/branch");
 const Product = require("../../models/SuperAdminModels/Product");
 const Delivery = require("../../models/SuperAdminModels/DeliveryBoy") 
-
+const User = require("../../models/UserModels/User");
 
  
 //✅ Get All Delivery Boys
@@ -188,51 +188,49 @@ const getTopSellingBrands = async (req, res) => {
  
  
 //✅ Get Recent Orders
-const getRecentOrders = async (req, res) => {
+const getRecentTrackedOrders = async (req, res) => {
   try {
-    const { branchName } = req.query;
- 
-    const branch = await branchModel.findOne({ branchName });
+    const branchAdmin = req.branchAdmin;
+
+    // Step 1: Get the Branch ID from branchAdmin
+    const branchId = branchAdmin.branch;
+
+    // Step 2: Find the Branch & its service pin codes
+    const branch = await branchModel.findById(branchId);
     if (!branch) {
-      return res.status(404).json({
-        success: false,
-        message: `Branch with name "${branchName}" not found.`,
-      });
+      return res.status(404).json({ message: "Branch not found." });
     }
- 
-    const orders = await Order.find({ branchInfo: branch._id })
+
+    const servicePinCodes = branch.servicePinCode; 
+
+    const users = await User.find({
+      address: { $regex: servicePinCodes.join("|") },
+    }).select("_id");
+
+    const userIds = users.map(user => user._id);
+
+    // Step 4: Get recent orders from those users
+    const recentOrders = await Order.find({
+      user: { $in: userIds },
+      branchInfo: branchId, 
+    })
       .sort({ createdAt: -1 })
       .limit(10)
-      .populate("user", "name email")
-      .populate("items.product", "productName")
-      .populate("branchInfo", "branchName");
- 
-    const formattedOrders = [];
- 
-    for (const order of orders) {
-      for (const item of order.items) {
-        formattedOrders.push({
-          // trackingNo: order._id.toString().slice(-8), // last 8 chars of ObjectId as Tracking No.
-          productName: item.product?.productName || "N/A",
-          totalOrder: item.quantity,
-          status: order.status || "Pending", // Default or pull from schema
-          totalAmount: `₹${item.price * item.quantity}`,
-        });
-      }
-    }
- 
-    res.status(200).json({
-      success: true,
-      branch: branchName,
-      recentOrders: formattedOrders,
-    });
+      .populate("items.product")
+      .populate("user");
+
+    const orders = recentOrders.map(order => ({
+      // trackingNo: order._id,
+      productName: order.items[0]?.product?.productName || "Product",
+      totalOrder: order.items.length,
+      status: order.deliveryStatus,
+      totalAmount: order.totalAmount,
+    }));
+
+    return res.status(200).json({ recentOrders: orders });
   } catch (error) {
-    console.error("Error fetching formatted recent orders:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error while formatting recent orders",
-      error: error.message,
-    });
+    console.error("getRecentTrackedOrders error:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
@@ -242,7 +240,7 @@ module.exports = {
   getProductCount,
   getAllOrdersDeliveredIncome,
   getTopSellingBrands,
-  getRecentOrders
+  getRecentTrackedOrders
 };
 
  
