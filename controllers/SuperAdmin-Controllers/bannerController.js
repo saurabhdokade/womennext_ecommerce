@@ -1,32 +1,18 @@
 const Banner = require("../../models/SuperAdminModels/banner");
 const { cloudinary } = require("../../config/cloudinary");
 
-
-
 //✅ Add Banner
 const addBanner = async (req, res) => {
   try {
-    const { category, status } = req.body;
+    const { title, description } = req.body;
 
-    // Validate category
-    if (!category || !["Offer Banner", "Discount"].includes(category)) {
+    if (!title || !description) {
       return res.status(400).json({
         success: false,
-        message:
-          "Invalid or missing category. Valid options: 'Offer Banner', 'Discount'.",
+        message: "Title and description are required.",
       });
     }
 
-    // Validate status
-    if (!status || !["Published", "Not Published"].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invalid or missing status. Valid options: 'Published', 'Not Published'.",
-      });
-    }
-
-    // Validate image files
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
@@ -34,7 +20,6 @@ const addBanner = async (req, res) => {
       });
     }
 
-    // **✅ Fixed the condition: Now it correctly checks for more than 5 images**
     if (req.files.length > 5) {
       return res.status(400).json({
         success: false,
@@ -42,19 +27,28 @@ const addBanner = async (req, res) => {
       });
     }
 
-    // Store image paths
     const images = req.files.map((file) => file.path);
 
-    // Create a new banner
+    // 🔢 Generate next Banner No.
+    const lastBanner = await Banner.findOne().sort({ createdAt: -1 });
+    let nextBannerNo = "Banner No.1";
+
+    if (lastBanner && lastBanner.bannerNo) {
+      const lastNumber =
+        parseInt(lastBanner.bannerNo.replace("Banner No.", "")) || 0;
+      const newNumber = lastNumber + 1;
+      nextBannerNo = `Banner No.${newNumber}`;
+    }
+
     const newBanner = new Banner({
-      category,
-      images, // Save array of image URLs
-      status,
+      title,
+      description,
+      images,
+      bannerNo: nextBannerNo,
     });
 
     await newBanner.save();
 
-    // Send success response
     res.status(201).json({
       success: true,
       message: "Banner added successfully.",
@@ -86,7 +80,7 @@ const getAllBanners = async (req, res) => {
     const totalBanners = await Banner.countDocuments(filter);
     const totalPages = Math.ceil(totalBanners / limit);
 
-    const banners = await Banner.find(filter)
+    const banners = await Banner.find(filter, { bannerNo: 1, images: 1, title: 1 }) // 🎯 Explicitly include needed fields
       .sort({ createdAt: sortOrder })
       .skip((page - 1) * limit)
       .limit(limit);
@@ -103,15 +97,18 @@ const getAllBanners = async (req, res) => {
   }
 };
 
+
 //✅ Update Banner with Cloudinary Image Upload
 const updateBanner = async (req, res) => {
   try {
     const { id } = req.params;
-    const { category, status } = req.body;
+    const { title, description } = req.body;
+
     let updateData = {};
 
-    if (category) updateData.category = category;
-    if (status) updateData.status = status;
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+  
 
     const existingBanner = await Banner.findById(id);
     if (!existingBanner) {
@@ -143,6 +140,7 @@ const updateBanner = async (req, res) => {
   }
 };
 
+
 //✅ Delete Banner
 const deleteBanner = async (req, res) => {
   try {
@@ -163,31 +161,11 @@ const deleteBanner = async (req, res) => {
   }
 };
 
-//✅ Get Dropdown option for category
-const getDropdownCategoryOptions = async (req, res) => {
-  try {
-    const categories = ["Offer Banner", "Discount"];
-    res.json({ categories });
-  } catch (error) {
-    res.status(500).json({ message: "Server error.", error });
-  }
-};
 
-//✅ Get Dropdown option for status
-const getDropdownStatusOptions = async (req, res) => {
-  try {
-    const statuses = ["Published", "Not Published"];
-    res.json({ statuses });
-  } catch (error) {
-    res.status(500).json({ message: "Server error.", error });
-  }
-};
 
 module.exports = {
   addBanner,
   getAllBanners,
   updateBanner,
   deleteBanner,
-  getDropdownCategoryOptions,
-  getDropdownStatusOptions,
 };

@@ -1,19 +1,24 @@
 const mongoose = require("mongoose");
  
-const BannerSchema = new mongoose.Schema(
-  {
-    category: {
-      type: String,
-      enum: ["Offer Banner", "Discount"],
-      required: true,
-    },
-    images: [{ type: String, required: true }],
-    status: {
-      type: String,
-      enum: ["Published", "Not Published"],
-      default: "Not Published",
-    },
+const BannerSchema = new mongoose.Schema({
+  
+  bannerNo: {
+    type: String,
+    unique: true
   },
+  images:{
+    type:[String],
+    required:true
+  },
+  title:{
+    type:String,
+    required:true
+  },
+  description:{
+    type:String,
+    required:true
+  }
+},
   { timestamps: true }
 );
  

@@ -8,7 +8,6 @@ router.post("/addBanner", upload.array("images", 5), addBanner);
 router.get("/getAllBanner", getAllBanners);
 router.delete("/deleteBanner/:id", deleteBanner);
 router.put("/updateBanner/:id", upload.array("images", 5), updateBanner);
-router.get("/getDropdownCategoryOptions", getDropdownCategoryOptions);
-router.get("/getDropdownStatusOptions", getDropdownStatusOptions);
+
 
 module.exports = router;
