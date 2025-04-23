@@ -90,6 +90,7 @@ const getAllBranches = async (req, res) => {
 
     // Format servicePinCode as comma-separated string
     const branches = rawBranches.map((branch) => ({
+      id: branch._id,
       branchName: branch.branchName,
       branchManagerName: branch.branchManagerName,
       servicePinCode: Array.isArray(branch.servicePinCode)
@@ -147,7 +148,7 @@ const getBranchById = async (req, res) => {
 
     // Step 2: Get delivery boys
     const deliveryBoys = await DeliveryBoyModel.find({})
-      .select("userId fullName email phoneNumber address")
+      .select("userId fullName email phoneNumber address").sort({ createdAt: -1 }).limit(3)
       .lean();
 
     const formattedDeliveryBoys = deliveryBoys.map((boy) => ({
@@ -162,7 +163,7 @@ const getBranchById = async (req, res) => {
     const products = await ProductModel.find({})
       .select(
         "productCode brand productName size availableProductQuantity price"
-      )
+      ).sort({ createdAt: -1 }).limit(3)
       .lean();
 
     const formattedProducts = products.map((product) => ({
@@ -298,6 +299,7 @@ const deleteBranch = async (req, res) => {
     });
   }
 };
+
 
 //✅ get Available Delivery Boys
 const availableDeliveryBoys = async (req, res) => {

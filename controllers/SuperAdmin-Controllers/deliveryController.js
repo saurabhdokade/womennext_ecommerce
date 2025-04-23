@@ -90,6 +90,9 @@ const getAllDeliveryBoys = async (req, res) => {
     if (sortOrder === "asc" || sortOrder === "desc") {
       sortOption.fullName = sortOrder === "desc" ? -1 : 1;
     }
+    if(!sortOrder){
+      sortOption ={createdAt:-1}
+    }
 
     // Create a search filter
     const searchFilter = {

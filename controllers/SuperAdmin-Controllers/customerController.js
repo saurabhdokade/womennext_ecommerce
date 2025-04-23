@@ -1,7 +1,8 @@
 const userModel = require("../../models/UserModels/User");
 const Order = require("../../models/UserModels/orderNow");
 const mongoose = require("mongoose");
-const branchModel = require("../../models/SuperAdminModels/branch");
+const branchModel = require("../../models/SuperAdminModels/branch")
+
 
 
 //✅ Get All Customers
@@ -10,10 +11,9 @@ const getAllCustomers = async (req, res) => {
     const { page = 1, limit = 10, search = "", branch } = req.query;
     const currentPage = parseInt(page);
     const pageLimit = parseInt(limit);
-
+ 
     let query = {};
-    query.isVerified = true;
-
+ 
     // Handle search parameters
     if (search) {
       query = {
@@ -24,12 +24,12 @@ const getAllCustomers = async (req, res) => {
         ],
       };
     }
-
+ 
     // Fetch branch pincode if branch is provided
     if (branch) {
       const branchInfo = await branchModel.findById(branch).select("servicePinCode");
       const servicePincodes = branchInfo?.servicePinCode || [];
-
+ 
       // If servicePincodes is empty, return empty data
       if (servicePincodes.length === 0) {
         return res.status(200).json({
@@ -42,11 +42,11 @@ const getAllCustomers = async (req, res) => {
           customers: [],
         });
       }
-
+ 
       // Add pincode filter
-      query.address = { $regex: servicePincodes.join("|"), $options: "i" };
+      query.address = { $regex: `(${servicePincodes.join("|")})`, $options: "i" };
     }
-
+ 
     // Aggregate query
     const customers = await userModel.aggregate([
       { $match: query },
@@ -63,10 +63,10 @@ const getAllCustomers = async (req, res) => {
         },
       },
     ]);
-
+ 
     const totalCustomers = await userModel.countDocuments(query);
     const totalPages = Math.ceil(totalCustomers / pageLimit);
-
+ 
     const formattedCustomers = customers.map((customer) => ({
       _id: customer._id,
       fullName: {
@@ -76,7 +76,7 @@ const getAllCustomers = async (req, res) => {
       phoneNumber: customer.phoneNumber,
       fullAddress: customer.address,
     }));
-
+ 
     return res.status(200).json({
       success: true,
       totalCustomers,
@@ -87,7 +87,7 @@ const getAllCustomers = async (req, res) => {
       customers: formattedCustomers,
     });
   } catch (error) {
-    console.log(error);
+    console.log("Error in getAllCustomers:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -116,7 +116,7 @@ const getCustomerById = async (req, res) => {
     const orders = await Order.find({
       user: userId,
       status: "Delivered",
-    }).populate("items.product");
+    }).populate("items.product").sort({ createdAt: -1 }).limit(3);
 
     const formattedProducts = orders.flatMap((order) =>
       order.items.map((item) => ({
