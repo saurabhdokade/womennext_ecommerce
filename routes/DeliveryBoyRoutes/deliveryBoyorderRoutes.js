@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { acceptOrder, canceldeliveryBoyOrder, getAvailableOrders, confirmPayment, getDeliveryBoySummary, getOrderDetails, getDateWiseOrderHistory, getOrderHistoryDetails, getavaliableOrderDetails } = require("../../controllers/deliveryBoy-Controllers/deliveryBoyOrdersController");
+const { acceptOrder, canceldeliveryBoyOrder, getAvailableOrders, confirmPayment, getDeliveryBoySummary, getOrderDetails, getDateWiseOrderHistory, getOrderHistoryDetails, getavaliableOrderDetails, verifyOnlinePayment } = require("../../controllers/deliveryBoy-Controllers/deliveryBoyOrdersController");
 const deliveryBoyAuthMiddleware = require("../../middlewares/deliveryBoyAuthMiddleware");
  
 
@@ -8,13 +8,14 @@ const deliveryBoyAuthMiddleware = require("../../middlewares/deliveryBoyAuthMidd
 
 //✅deliveryboy page
 router.patch('/accept/:id', deliveryBoyAuthMiddleware, acceptOrder);
-router.patch('/cancel/:orderId', deliveryBoyAuthMiddleware, canceldeliveryBoyOrder);
+router.patch('/cancel/:id', deliveryBoyAuthMiddleware, canceldeliveryBoyOrder);
  
  
 //✅ deliveryboy summery payment 
 router.get('/availableOrders', deliveryBoyAuthMiddleware, getAvailableOrders);
 router.get("/:id/details", deliveryBoyAuthMiddleware, getavaliableOrderDetails);
 router.post("/:id/payment", deliveryBoyAuthMiddleware,confirmPayment);
+router.get("/payment/verify", deliveryBoyAuthMiddleware, verifyOnlinePayment);
 router.get("/deliveryboy/summary",  deliveryBoyAuthMiddleware,getDeliveryBoySummary);
 router.get("/details/:id", deliveryBoyAuthMiddleware, getOrderDetails);
  

@@ -4,6 +4,7 @@ const Order = require("../../models/UserModels/orderNow");
 const branchModel = require("../../models/SuperAdminModels/branch");
 const branchAdminNotificationModel = require('../../models/BranchAdminModels/branchAdminNotification');
 const BranchAdmin = require("../../models/BranchAdminModels/branchAdmin");
+const userNotificationModel = require("../../models/UserModels/userNotification");
 //✅ Add Item  To Cart
 const addToCart = async (req, res) => {
   try {
@@ -87,7 +88,7 @@ const getCart = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Cart fetched successfully",
+      message: "Cart get fetched successfully",
       cart,
     });
   } catch (error) {
@@ -236,7 +237,8 @@ const BuyOrderFromCart = async (req, res) => {
       return res.status(400).json({ message: "Cart is empty. Add products first." });
     }
  
-    const { emergencyDelivery, deliveryAddress, paymentMethod } = req.body;
+    const { emergencyDelivery, deliveryAddress, paymentMode } = req.body;
+    
     const emergency = emergencyDelivery === "true";
  
     let totalAmount = 0;
@@ -303,7 +305,7 @@ const BuyOrderFromCart = async (req, res) => {
  
     // Step 3: Generate unique Order ID
     const generateUniqueOrderId = async () => {
-      const prefix = "9B76HD545E";
+      const prefix = "ORD000";
       let nextNumber = 1;
       const latestOrder = await Order.findOne({ orderId: { $regex: `^${prefix}` } })
         .sort({ createdAt: -1 })
@@ -320,7 +322,7 @@ const BuyOrderFromCart = async (req, res) => {
       let newOrderId;
       let exists = true;
       while (exists) {
-        newOrderId = prefix + nextNumber.toString().padStart(4, "0");
+        newOrderId = prefix + nextNumber.toString().padStart(1, "0");
         const existingOrder = await Order.findOne({ orderId: newOrderId });
         if (!existingOrder) {
           exists = false;
@@ -339,7 +341,7 @@ const BuyOrderFromCart = async (req, res) => {
       user: userId,
       orderId,
       deliveryAddress,
-      paymentMethod,
+      paymentMode,
       totalAmount,
       items: orderItems,
       emergencyDelivery: emergency,
@@ -389,7 +391,7 @@ const BuyOrderFromCart = async (req, res) => {
         user: newOrder.user,
         orderId: newOrder.orderId,
         deliveryAddress: newOrder.deliveryAddress,
-        paymentMethod: newOrder.paymentMethod,
+        paymentMode: newOrder.paymentMode,
         emergencyDelivery: newOrder.emergencyDelivery,
         items: newOrder.items,
         branchInfo: newOrder.branchInfo,

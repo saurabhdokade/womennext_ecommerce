@@ -31,8 +31,12 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["COD", "Online"],
-      required: true,
+      enum: ["Cash", "Online"],
+      default: "Cash",
+    },
+    paymentMode:{
+      type:Boolean,
+      default:false
     },
     cashReceived: {
       type: Boolean,
@@ -129,6 +133,28 @@ const orderSchema = new mongoose.Schema(
       type: Date, 
       default: null 
     }, 
+    razorpayPaymentLinkId: {
+      type: String,  // Ensure the type matches the one sent by Razorpay
+      required: false,
+      unique: true,  // You can make this field unique to prevent duplicates
+    },
+    razorpayOrderId: {
+      type: String,
+      required: false,
+    },
+    razorpayPaymentId: {
+      type: String,
+      required: false,
+    },
+    razorpayLinkId: {
+      type: String
+    },
+    razorpayLinkStatus: {
+      type: String,
+      enum: ["created", "paid", "expired", "cancelled"],
+      default: "created"
+    },
+ 
   },
   { timestamps: true }
 );

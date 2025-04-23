@@ -1,111 +1,145 @@
 const Order = require("../../models/UserModels/orderNow");
 const mongoose = require("mongoose")
 const userNotificationModel = require("../../models/UserModels/userNotification");
+const Razorpay = require("razorpay");
+const User = require("../../models/UserModels/User");
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || "rzp_live_D3D9CzhhPmwAZe",
+  key_secret: process.env.RAZORPAY_KEY_SECRET || "gTPUidHTVpnljtGjLZHUcFV4",
+});
+ 
 
 //✅ Accept delivery Boy Order
 const acceptOrder = async (req, res) => {
   try {
     const deliveryBoyId = req.deliveryBoy?.id;
     const { id } = req.params;
- 
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid Order ID" });
     }
- 
-    const order = await Order.findById(id).populate("user items.product");
- 
+
+    const order = await Order.findById(id).populate("deliveryBoy").populate("items.product");
+
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
- 
+
     if (order.deliveryBoy && order.deliveryStatus === "Accepted") {
       return res.status(400).json({
         message: "Order already accepted",
         deliveryBoy: order.deliveryBoy,
       });
     }
- 
+
     order.deliveryBoy = deliveryBoyId;
     order.deliveryStatus = "Accepted";
- 
+
     await order.save();
-    await order.populate("deliveryBoy");
- 
+
     const userNotification = new userNotificationModel({
       userId: order.user._id,
       title: "Out for Delivery",
       message: "Out for delivery",
-      image: order.items?.[0]?.product?.image?.[0] || null
+      image: order.items?.[0]?.product?.image?.[0] || null,
     });
- 
+
     await userNotification.save();
- 
+
+    // Filter unwanted fields before sending response
+    const {
+      otherReason,
+      cancelledBy,
+      cancelDate,
+      createdAt,
+      updatedAt,
+      __v,
+      ...filteredOrder
+    } = order.toObject();
+
     return res.status(200).json({
       message: "Order accepted successfully",
-      order,
+      order: filteredOrder,
     });
+
   } catch (error) {
     console.error("Accept order error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
- 
+
  
 //✅ Cancel delivery Boy Order
-  const canceldeliveryBoyOrder = async (req, res) => {
-    try {
-      const deliveryBoyId = req.deliveryBoy.id.toString(); 
-      const { id } = req.params;
-      const { cancelReason, otherReason } = req.body;
-  
-      const validReasons = [
-        "I want to change the Product",
-        "Not available on the delivery time",
-        "Price High",
-        "I ordered wrong Product",
-        "Other",
-      ];
-  
-      if (!validReasons.includes(cancelReason)) {
-        return res.status(400).json({ message: "Invalid cancellation reason." });
-      }
-  
-      if (cancelReason === "Other" && (!otherReason || otherReason.trim() === "")) {
-        return res.status(400).json({
-          message: "Please provide a reason for cancellation.",
-        });
-      }
-  
-      const order = await Order.findById(id);
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-  
-      if (order.status === "Cancelled") {
-        return res.status(400).json({ message: "Order is already cancelled." });
-      }
-  
-      // Update cancellation details
-      order.deliveryBoy = null;                         
-      order.deliveryStatus = "In Process";             
-      order.status = "Cancelled";                      
-      order.cancelReason = cancelReason;
-      order.otherReason = cancelReason === "Other" ? otherReason : "N/A";
-  
-      await order.save({ timestamps: false });          
-  
-      return res.status(200).json({
-        message: "Order cancelled successfully by delivery boy",
-        order,
-      });
-  
-    } catch (error) {
-      console.error("Cancel delivery order error:", error);
-      return res.status(500).json({ message: "Server error", error: error.message });
+const canceldeliveryBoyOrder = async (req, res) => {
+  try {
+    const deliveryBoyId = req.deliveryBoy?.id.toString();
+    const { id } = req.params;
+    const { cancelReason, otherReason } = req.body;
+
+    const validReasons = [
+      "I want to change the Product",
+      "Not available on the delivery time",
+      "Price High",
+      "I ordered wrong Product",
+      "Other",
+    ];
+
+    if (!validReasons.includes(cancelReason)) {
+      return res.status(400).json({ message: "Invalid cancellation reason." });
     }
-  };
+
+    if (cancelReason === "Other" && (!otherReason || otherReason.trim() === "")) {
+      return res.status(400).json({ message: "Please provide a reason for cancellation." });
+    }
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Ensure only assigned delivery boy can cancel
+    if (order.deliveryBoy?.toString() !== deliveryBoyId) {
+      return res.status(403).json({ message: "You are not assigned to this order." });
+    }
+
+    if (order.status === "Cancelled") {
+      return res.status(400).json({ message: "Order is already cancelled." });
+    }
+
+    // Cancel the order
+    order.deliveryBoy = null;
+    order.deliveryStatus = "Cancelled"; // Mark delivery status cancelled
+    order.status = "Cancelled";
+    order.cancelReason = cancelReason;
+    order.otherReason = cancelReason === "Other" ? otherReason : "N/A";
+
+    await order.save();
+
+    // Remove unnecessary fields
+    const {
+      otherReason: _other,
+      cancelDate,
+      cancelledBy,
+      createdAt,
+      updatedAt,
+      __v,
+      ...filteredOrder
+    } = order.toObject();
+
+    return res.status(200).json({
+      message: "Order cancelled successfully by delivery boy",
+      order: filteredOrder,
+    });
+
+  } catch (error) {
+    console.error("Cancel delivery order error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
   
-  //✅ Get available orders for delivery boy
+//✅ Get available orders for delivery boy
   const getAvailableOrders = async (req, res) => {
     try {
       const deliveryBoyId = req.deliveryBoy?.id;
@@ -174,6 +208,8 @@ const acceptOrder = async (req, res) => {
     }
   };
   
+
+  //✅ Get available order details
   const getavaliableOrderDetails = async (req, res) => {
     try {
       const deliveryBoyId = req.deliveryBoy?.id;
@@ -245,6 +281,7 @@ const acceptOrder = async (req, res) => {
    const confirmPayment = async (req, res) => {
     try {
       const { id } = req.params;
+      const { paymentMethod } = req.body;
    
       const order = await Order.findById(id)
         .populate("user")
@@ -254,63 +291,121 @@ const acceptOrder = async (req, res) => {
         return res.status(404).json({ message: "Order not found" });
       }
    
+      // 🚫 Already delivered? Stop.
+      if (order.status === "Delivered" || order.deliveryStatus === "Delivered") {
+        return res.status(400).json({ message: "Order already delivered, no further payment processing allowed." });
+      }
+   
+      // 🚫 Already paid? Stop.
+      if (order.paymentStatus === "Success") {
+        return res.status(400).json({ message: "Payment already confirmed for this order." });
+      }
+   
+      // 🚫 Delivery not accepted yet? Stop.
       if (order.deliveryStatus !== "Accepted") {
         return res.status(400).json({ message: "User has not accepted the delivery yet." });
       }
    
-      let isCash = order.paymentMethod === "Cash" || order.paymentMethod === "COD";
+      const user = await User.findById(order.user);
+      const productNames = order.items.map(item => {
+        return `${item.product.productName} x${item.quantity}`;
+      }).join(', ');
    
-      if (isCash) {
+      // Store payment method
+      order.paymentMethod = paymentMethod;
+   
+      // === Cash or COD Payment ===
+      if (paymentMethod === "Cash" || paymentMethod === "COD") {
         order.cashReceived = true;
+        order.paymentStatus = "Success";
+        order.status = "Delivered";
+        order.deliveryStatus = "Delivered";
+        await order.save();
+        const userNotification = new userNotificationModel({
+          userId: order.user._id,
+          title: "Order Delivered",
+          message: "Your order has been delivered successfully",
+          image: order.items?.[0]?.product?.image?.[0] || null
+        });
+     
+        await userNotification.save();
+   
+        return res.status(200).json({
+          message: "Cash payment confirmed and order delivered.",
+          data: {
+            orderId: order.orderId,
+            amount: order.totalAmount,
+            paymentMethod:order.paymentMethod,
+            cashReceived: true,
+            yourEarning: `₹${(order.totalAmount * 0.10).toFixed(0)}`,
+            user: {
+              fullName: order.user.fullName,
+              gender: order.user.gender,
+              phoneNumber: order.user.phoneNumber
+            },
+            orderDate: order.orderDate.toDateString(),
+            orderTime: order.orderDate.toLocaleTimeString(),
+            productDetails: order.items.map(item => ({
+              name: item.product.productName,
+              quantity: item.quantity,
+              price: item.price
+            }))
+          }
+        });
       }
    
-      order.paymentStatus = "Success";
-      order.status = "Delivered";
-      order.deliveryStatus = "Delivered";
+      // === Online Payment ===
+      if (paymentMethod === "Online") {
+        const paymentLink = await razorpay.paymentLink.create({
+          amount: order.totalAmount * 100,
+          currency: "INR",
+          accept_partial: false,
+          description: `Order #${order.orderId} | ${order.items.map(item => `${item.product.productName} x${item.quantity}`).join(", ")}`,
+          customer: {
+            name: order.user.fullName,
+            contact: order.user.phoneNumber.toString(),
+          },
+          notify: {
+            sms: true,
+            email: true,
+          },
+          notes: {
+            "Order ID": order.orderId,
+            "Product": productNames,
+            "Delivery Slot": "12PM - 2PM",
+            "Gender": user.gender,
+            "Customer Name": user.fullName,
+            "Phone Number": user.phoneNumber,
+          },
+          callback_url: "http://localhost:8000/api/order/payment/verify",
+          callback_method: "get"
+        });
    
-      await order.save();
+        order.razorpayLinkId = paymentLink.id;
+        order.razorpayLinkStatus = "created";
+        await order.save();
    
-      const userNotification = new userNotificationModel({
-        userId: order.user._id,
-        title: "Order Delivered",
-        message: "Your order has been delivered successfully",
-        image: order.items?.[0]?.product?.image?.[0] || null
-      });
-   
-      await userNotification.save();
-      const responseData = {
-        orderId: order.orderId,
-        amount: order.totalAmount,
-        yourEarning: `₹${(order.totalAmount * 0.10).toFixed(0)}`,
-      };
-   
-      if (order.items.length > 0) {
-        const firstProduct = order.items[0].product;
-        responseData.productName = firstProduct?.productName || "N/A";
-        responseData.productImage = firstProduct?.image || null;
+        return res.status(200).json({
+          message: "Online payment link created successfully",
+          paymentUrl: paymentLink.short_url,
+          paymentMethod: order.paymentMethod,
+          orderId: order.orderId,
+          user: {
+            fullName: order.user.fullName,
+            gender: order.user.gender,
+           contactNumber: order.user.phoneNumber
+          },
+          orderDate: order.createdAt.toDateString(),
+          timeSlot: paymentLink.notes["Delivery Slot"] || "Not specified",
+          productDetails: order.items.map(item => ({
+            name: item.product.productName,
+            quantity: item.quantity,
+            price: item.price
+          })),
+        });
       }
    
-      if (isCash) {
-        responseData.cashReceived = true;
-      } else {
-        // Online payment details
-        responseData.customerName = order.user?.name || "N/A";
-        responseData.date = new Date(order.updatedAt).toLocaleDateString();
-        responseData.time = new Date(order.updatedAt).toLocaleTimeString();
-        responseData.contactNumber = order.user?.contactNumber || "N/A";
-        responseData.gender = order.user?.gender || "N/A";
-        responseData.productDetails = order.items.map(item => ({
-          productName: item.product?.name || "N/A",
-          productImage: item.product?.image || null,
-          quantity: item.quantity,
-          price: item.price
-        }));
-      }
-   
-      return res.status(200).json({
-        message: "Payment confirmed successfully",
-        data: responseData
-      });
+      return res.status(400).json({ message: "Invalid payment method" });
    
     } catch (err) {
       console.error("Payment confirmation error:", err);
@@ -318,6 +413,45 @@ const acceptOrder = async (req, res) => {
     }
   };
    
+   
+  //✅ Verify Online Payment
+  const verifyOnlinePayment = async (req, res) => {
+    try {
+      const { razorpay_payment_id, razorpay_payment_link_id, razorpay_payment_link_status } = req.query;
+   
+      // Fetch order using razorpayLinkId
+      const order = await Order.findOne({ razorpayLinkId: razorpay_payment_link_id });
+   
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+   
+      if (razorpay_payment_link_status === "paid") {
+        order.paymentStatus = "Success";
+        order.status = "Delivered";
+        order.deliveryStatus = "Delivered";
+        order.cashReceived = false; // because it's online
+        await order.save();
+   
+        return res.status(200).json({
+          message: "Online payment verified and order delivered",
+          data: {
+            orderId: order.orderId,
+            paymentId: razorpay_payment_id,
+            yourEarning: `₹${(order.totalAmount * 0.10).toFixed(0)}`
+          }
+        });
+      }
+   
+      return res.status(400).json({ message: "Payment not completed yet" });
+   
+    } catch (error) {
+      console.error("Payment verification error:", error);
+      return res.status(500).json({ message: "Server error during payment verification" });
+    }
+  };
+
+  
   //✅ Get delivery boy summary
   const getDeliveryBoySummary = async (req, res) => {
     try {
@@ -559,6 +693,7 @@ const acceptOrder = async (req, res) => {
     getAvailableOrders,
     getavaliableOrderDetails,
     confirmPayment,
+    verifyOnlinePayment,
     getDeliveryBoySummary,
     getOrderDetails,
     getDateWiseOrderHistory,
