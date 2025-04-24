@@ -67,20 +67,32 @@ const addBanner = async (req, res) => {
 //✅ Get all banners
 const getAllBanners = async (req, res) => {
   try {
-    let query = req.query.query || "";
+    let query = req.query.query || ""; // optional search term
     let limit = parseInt(req.query.limit) || 4;
     let page = parseInt(req.query.page) || 1;
-    let sortOrder = req.query.sort === "asc" ? 1 : -1;
+
+    // Default sorting: ascending
+    let sortOrder = req.query.sort === "desc" ? -1 : 1;
 
     let filter = {};
     if (query) {
-      filter.category = { $regex: query, $options: "i" };
+      filter = {
+        $or: [
+          { title: { $regex: query, $options: "i" } },
+          { description: { $regex: query, $options: "i" } }
+        ]
+      };
     }
 
     const totalBanners = await Banner.countDocuments(filter);
     const totalPages = Math.ceil(totalBanners / limit);
 
-    const banners = await Banner.find(filter, { bannerNo: 1, images: 1, title: 1 }) // 🎯 Explicitly include needed fields
+    const banners = await Banner.find(filter, {
+        bannerNo: 1,
+        images: 1,
+        title: 1,
+        description: 1
+      })
       .sort({ createdAt: sortOrder })
       .skip((page - 1) * limit)
       .limit(limit);

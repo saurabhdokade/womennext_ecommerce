@@ -13,7 +13,7 @@ const {
     getAvailableProductQuantity,
     getAllBranches,
     assignToBranch,
-    getBranchProductQuantity,
+    getBranchAvailableProductQuantity,
 } = require("../../controllers/SuperAdmin-Controllers/productController");
 const router = express.Router();
  
@@ -24,7 +24,7 @@ router.get("/getProductById/:id", getProductById);
 router.get("/getAvailableProductQuantity/:id", getAvailableProductQuantity);
 router.get("/getBranchDropdown", getAllBranches);
 router.put("/assignProductToBranch", assignToBranch);
-router.get("/getAvailableQuantityOfProduct", getBranchProductQuantity);
+router.get("/getAvailableQuantityOfProduct", getBranchAvailableProductQuantity);
 router.put("/updateProduct/:id", upload.array("image", 5), updateProduct);
 router.delete("/deleteProductById/:id", deleteProductById);
 router.get("/getAllBrands", getBrands);

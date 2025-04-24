@@ -433,7 +433,7 @@ const assignToBranch = async (req, res) => {
 };
 
 //✅ Get available quantity of branch product
-const getBranchProductQuantity = async (req, res) => {
+const getBranchAvailableProductQuantity = async (req, res) => {
   try {
       const { branchId, productId } = req.query;
 
@@ -537,7 +537,7 @@ module.exports = {
   getAvailableProductQuantity,
   getAllBranches,
   assignToBranch,
-  getBranchProductQuantity,
+  getBranchAvailableProductQuantity,
   deleteProductById,
   getBrands,
   getSizes,
