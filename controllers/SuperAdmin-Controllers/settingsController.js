@@ -1,234 +1,231 @@
-const Settings = require("../../models/SuperAdminModels/Settings");
-
-
-
-//✅ Create Settings
-const createSettings = async (req, res) => {
+const {
+  EmergencyFeeModel,
+  TermsAndConditionsModel,
+  PrivacyPolicyModel,
+  AboutUsModel,
+} = require("../../models/SuperAdminModels/Settings");
+ 
+//✅ isEmpty Function
+const isEmpty = (value) =>
+  !value || (Array.isArray(value) && value.length === 0);
+ 
+//✅ Create Emergency Fee
+const createEmergencyFee = async (req, res) => {
+  const { feeAmount } = req.body;
+  if (!feeAmount || isNaN(feeAmount)) {
+    return res.status(400).json({ error: "feeAmount must be a number" });
+  }
+ 
   try {
-    const {
-      emergencyDeliveryFee = 0,
-      settingType,
-      termsAndConditions = [],
-      privacyPolicy = [],
-      aboutUs = [],
-      referAndEarn = [],
-    } = req.body;
-
-    if (!settingType?.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Setting type is required",
-      });
-    }
-
-    // Ensure descriptions are arrays of strings
-    const formatDescription = (input) => {
-      if (Array.isArray(input)) return input; // Already an array of strings
-      if (typeof input === "string") return [input]; // Convert single string to array
-      if (typeof input === "object" && input?.description)
-        return input.description; // Extract array from object
-      return []; // Default to empty array if none of the above match
-    };
-
-    const newSettings = new Settings({
-      emergencyDeliveryFee,
-      settingType,
-      termsAndConditions: {
-        description: formatDescription(termsAndConditions),
-      },
-      privacyPolicy: { description: formatDescription(privacyPolicy) },
-      aboutUs: { description: formatDescription(aboutUs) },
-      referAndEarn: { description: formatDescription(referAndEarn) },
-    });
-
-    await newSettings.save();
-
-    return res.status(201).json({
-      success: true,
-      message: "Settings created successfully",
-      settings: newSettings,
-    });
-  } catch (error) {
-    console.error("Error creating settings:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to create settings. Please try again later.",
-      error: error.message,
-    });
+    const existing = await EmergencyFeeModel.findOne();
+    if (existing)
+      return res.status(400).json({ error: "Emergency Fee already exists" });
+ 
+    const fee = await EmergencyFeeModel.create({ feeAmount });
+    res.status(201).json(fee);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
-
-//✅ Get Settings
-const getSettings = async (req, res) => {
+ 
+//✅ Get Emergency Fee
+const getEmergencyFee = async (req, res) => {
   try {
-    const settings = await Settings.findOne();
-
-    res.status(200).json(settings || {});
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const data = await EmergencyFeeModel.findOne();
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
-
-//✅ Update Emergency Delivery Fee and Setting Type
-const updateEmergencyDeliveryFeeAndSettingType = async (req, res) => {
+ 
+//✅ Update Emergency Fee
+const updateEmergencyFee = async (req, res) => {
+  const { feeAmount } = req.body;
+  if (!feeAmount || isNaN(feeAmount)) {
+    return res.status(400).json({ error: "feeAmount must be a number" });
+  }
+ 
   try {
-    const { fee, type } = req.body;
-
-    if (fee === undefined)
-      return res
-        .status(400)
-        .json({ message: "Emergency Delivery Fee is required" });
-    if (!type)
-      return res.status(400).json({ message: "Setting Type is required" });
-
-    const settings = await Settings.findOneAndUpdate(
+    const updated = await EmergencyFeeModel.findOneAndUpdate(
       {},
-      { emergencyDeliveryFee: fee, settingType: type },
-      { new: true, upsert: true }
+      { feeAmount },
+      { new: true }
     );
-
-    res.status(200).json({
-      message: "Emergency Delivery Fee and Setting Type is updated",
-      settings,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(200).json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
-
-//✅ Edit Terms and Conditions
-const editTermsAndConditions = async (req, res) => {
+ 
+//✅ Create Terms and Conditions
+const createTerms = async (req, res) => {
+  const { description } = req.body;
+  if (isEmpty(description)) {
+    return res.status(400).json({ error: "Description is required" });
+  }
+ 
   try {
-    const { termsAndConditions } = req.body;
-
-    const updatedSettings = await Settings.findOneAndUpdate(
-      {},
-      { $set: { "termsAndConditions.description": termsAndConditions } },
-      { new: true, upsert: true }
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: "Terms & Conditions updated successfully",
-      settings: updatedSettings,
-    });
-  } catch (error) {
-    console.error("Error updating Terms & Conditions:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-    });
+    const exists = await TermsAndConditionsModel.findOne();
+    if (exists) return res.status(400).json({ error: "Terms already exist" });
+ 
+    const data = await TermsAndConditionsModel.create({ description });
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
-
-//✅ Edit Privacy Policy
-const editPrivacyPolicy = async (req, res) => {
+ 
+//✅ Get Terms and Conditions
+const getTerms = async (req, res) => {
   try {
-    const { privacyPolicy } = req.body;
+    const data = await TermsAndConditionsModel.findOne();
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+ 
 
-    const updatedSettings = await Settings.findOneAndUpdate(
+//✅ Update Terms and Conditions
+const updateTerms = async (req, res) => {
+  const { description } = req.body;
+  if (isEmpty(description)) {
+    return res.status(400).json({ error: "Description is required" });
+  }
+ 
+  try {
+    const updated = await TermsAndConditionsModel.findOneAndUpdate(
       {},
-      { $set: { "privacyPolicy.description": privacyPolicy } },
-      { new: true, upsert: true }
+      { description },
+      { new: true }
     );
+    res.status(200).json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+ 
 
-    return res.status(200).json({
-      success: true,
-      message: "Privacy Policy updated successfully",
-      settings: updatedSettings,
-    });
-  } catch (error) {
-    console.error("Error updating Privacy Policy:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+//✅ Create Privacy Policy
+const createPrivacy = async (req, res) => {
+  const { description } = req.body;
+  if (isEmpty(description)) {
+    return res.status(400).json({ error: "Description is required" });
+  }
+ 
+  try {
+    const exists = await PrivacyPolicyModel.findOne();
+    if (exists)
+      return res.status(400).json({ error: "Privacy policy already exists" });
+ 
+    const data = await PrivacyPolicyModel.create({ description });
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+ 
+
+//✅ Get Privacy Policy
+const getPrivacy = async (req, res) => {
+  try {
+    const data = await PrivacyPolicyModel.findOne();
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+ 
+//✅ Update Privacy Policy
+const updatePrivacy = async (req, res) => {
+  const { description } = req.body;
+  if (isEmpty(description)) {
+    return res.status(400).json({ error: "Description is required" });
+  }
+ 
+  try {
+    const updated = await PrivacyPolicyModel.findOneAndUpdate(
+      {},
+      { description },
+      { new: true }
+    );
+    res.status(200).json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
+
+//✅ Create About Us
+const createAboutUs = async (req, res) => {
+  const { description } = req.body;
+  let images = [];
+  if (req.files && req.files.length > 0) {
+    images = req.files.map((file) => file.path);
+  }
+  if (isEmpty(description)) {
+    return res.status(400).json({ error: "Description is required" });
+  }
+ 
+  try {
+    const exists = await AboutUsModel.findOne();
+    if (exists)
+      return res.status(400).json({ error: "About Us already exists" });
+ 
+    const data = await AboutUsModel.create({ description, images });
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+ 
+//✅ Get About Us
+const getAboutUs = async (req, res) => {
+  try {
+    const data = await AboutUsModel.findOne();
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+ 
 //✅ Update About Us
 const updateAboutUs = async (req, res) => {
+  const { description } = req.body;
+ 
+  let images = [];
+  if (req.files && req.files.length > 0) {
+    images = req.files.map((file) => file.path);
+  }
+  if (isEmpty(description)) {
+    return res.status(400).json({ error: "Description is required" });
+  }
+ 
   try {
-    const { description } = req.body;
-    let updateData = {};
-
-    let images = [];
-    if (req.files && req.files.length > 0) {
-      images = req.files.map((file) => file.path);
-    }
-
-    if (images.length > 5) {
-      return res.status(400).json({ message: "Maximum 5 images allowed" });
-    }
-
-    if (description) updateData["aboutUs.description"] = description;
-    if (images.length > 0) updateData["aboutUs.images"] = images;
-
-    const settings = await Settings.findOneAndUpdate(
+    const updated = await AboutUsModel.findOneAndUpdate(
       {},
-      { $set: updateData },
-      { new: true, upsert: true }
+      { description, images },
+      { new: true }
     );
-
-    res
-      .status(200)
-      .json({ message: "About Us updated successfully", settings });
-  } catch (error) {
-    console.error("Error in updateAboutUs:", error);
-    res.status(500).json({ message: error.message });
+    res.status(200).json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
-//✅ Update Refer and Earn
-const updateReferAndEarn = async (req, res) => {
-  try {
-    const { description } = req.body;
-    let updateData = {};
-
-    let images = [];
-    if (req.files && req.files.length > 0) {
-      images = req.files.map((file) => file.path);
-    }
-
-    if (images.length > 5) {
-      return res.status(400).json({ message: "Maximum 5 images allowed" });
-    }
-
-    if (description) updateData["referAndEarn.description"] = description;
-    if (images.length > 0) updateData["referAndEarn.images"] = images;
-
-    const settings = await Settings.findOneAndUpdate(
-      {},
-      { $set: updateData },
-      { new: true, upsert: true }
-    );
-
-    res
-      .status(200)
-      .json({ message: "Refer and Earn updated successfully", settings });
-  } catch (error) {
-    console.error("Error in updateReferAndEarn:", error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-//✅ Setting Type Dropdown
-const settingTypeDropdown = async (req, res) => {
-  try {
-    const dropdownValue = ["Customer Website", "Mobile App", "Other"];
-
-    res.json({ success: true, data: dropdownValue });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
+ 
+ 
 module.exports = {
-  createSettings,
-  updateEmergencyDeliveryFeeAndSettingType,
-  getSettings,
-  editTermsAndConditions,
-  editPrivacyPolicy,
+  createEmergencyFee,
+  getEmergencyFee,
+  updateEmergencyFee,
+  createTerms,
+  getTerms,
+  updateTerms,
+  createPrivacy,
+  getPrivacy,
+  updatePrivacy,
+  createAboutUs,
+  getAboutUs,
   updateAboutUs,
-  updateReferAndEarn,
-  settingTypeDropdown,
 };

@@ -1,34 +1,26 @@
 const express = require("express");
 const router = express.Router();
-const { createSettings, updateEmergencyDeliveryFeeAndSettingType, getSettings, editTermsAndConditions, editPrivacyPolicy, updateAboutUs, updateReferAndEarn, settingTypeDropdown } = require("../../controllers/SuperAdmin-Controllers/settingsController");
+const ctrl = require("../../controllers/SuperAdmin-Controllers/settingsController");
 const { upload } = require("../../config/cloudinary");
  
-//✅ SuperAdmin Setting Routes
-router.post(
-  "/AddSettings",
-  upload.fields([
-    { name: "aboutUsImages", maxCount: 5 },
-    { name: "referAndEarnImages", maxCount: 5 },
-  ]),
-  createSettings
-);
-router.put("/updateSettings", updateEmergencyDeliveryFeeAndSettingType);
-router.get("/getAllSettings", getSettings);
+// Emergency Fee
+router.post("/createEmergencyFee", ctrl.createEmergencyFee);
+router.get("/getEmergencyFee", ctrl.getEmergencyFee);
+router.put("/updateEmergencyFee", ctrl.updateEmergencyFee);
  
-router.put("/terms", editTermsAndConditions);
-router.put("/privacy", editPrivacyPolicy);
-router.put(
-  "/about-us",
-  upload.array("images", 5),
-  updateAboutUs
-);
-router.put(
-  "/refer-and-earn",
-  upload.array("images", 5),
-  updateReferAndEarn
-);
-
-router.get("/settingDropdown", settingTypeDropdown);
+// Terms
+router.post("/createTerms", ctrl.createTerms);
+router.get("/getTerms", ctrl.getTerms);
+router.put("/updateTerms", ctrl.updateTerms);
+ 
+// Privacy
+router.post("/createPrivacy", ctrl.createPrivacy);
+router.get("/getPrivacy", ctrl.getPrivacy);
+router.put("/updatePrivacy", ctrl.updatePrivacy);
+ 
+// About Us
+router.post("/createAboutUs", upload.array("image", 5), ctrl.createAboutUs);
+router.get("/getAboutUs", ctrl.getAboutUs);
+router.put("/updateAboutUs", upload.array("image", 5), ctrl.updateAboutUs);
  
 module.exports = router;
- 

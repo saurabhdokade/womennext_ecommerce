@@ -72,8 +72,8 @@ const getAllBanners = async (req, res) => {
     let page = parseInt(req.query.page) || 1;
 
     // Default sorting: ascending
-    let sortOrder = req.query.sort === "desc" ? -1 : 1;
-
+    let sortOrder = req.query.sort === "asc" ? -1 : 1;
+    console.log("Sort Order:", sortOrder);  // Debugging: log sort order value
     let filter = {};
     if (query) {
       filter = {
@@ -87,7 +87,7 @@ const getAllBanners = async (req, res) => {
     const totalBanners = await Banner.countDocuments(filter);
     const totalPages = Math.ceil(totalBanners / limit);
 
-    const banners = await Banner.find(filter, {
+    const banners = await Banner.find({}, {
         bannerNo: 1,
         images: 1,
         title: 1,

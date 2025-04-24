@@ -406,7 +406,7 @@ const BuyOrderFromCart = async (req, res) => {
         productImage,
         items: orderItems.length,
         itemTotal: totalAmount - (emergency ? 20 : 0),
-        deliveryCharges: emergency ? 20 : 0,
+        deliveryCharges: emergency ? 40 : 0,
         orderTotal: totalAmount,
       },
     });
