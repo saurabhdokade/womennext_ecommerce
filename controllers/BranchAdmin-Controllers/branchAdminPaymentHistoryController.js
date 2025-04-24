@@ -42,6 +42,7 @@ const getPaymentHistory = async (req, res) => {
       date: new Date(order.orderDate).toLocaleDateString("en-GB"),
       productName: order.items.length > 0 && order.items[0].product?.productName ? order.items[0].product.productName : "N/A", // ✅ Ensure proper product name extraction
       deliveryBoyName: order.deliveryBoy?.fullName || "Not Assigned",
+      paymentMethod: order.paymentMethod,
       status: order.paymentMode ? "Paid" : "Not Paid",
     }));
 
@@ -89,7 +90,7 @@ const viewPaymentByDeliveryBoy = async (req, res) => {
         grandTotal,
         totalRecords: orders.length,
         paymentHistory: orders.map((order, index) => ({
-          srNo: index + 1,
+          _id: order._id,
           productName: order.items.length > 0 && order.items[0].product?.productName ? order.items[0].product.productName : "N/A",
           customerName: order.user?.fullName || "N/A",
           totalAmount: order.totalAmount,

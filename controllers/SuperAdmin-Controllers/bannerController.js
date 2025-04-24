@@ -71,9 +71,9 @@ const getAllBanners = async (req, res) => {
     let limit = parseInt(req.query.limit) || 4;
     let page = parseInt(req.query.page) || 1;
 
-    // Default sorting: ascending
-    let sortOrder = req.query.sort === "asc" ? -1 : 1;
-    console.log("Sort Order:", sortOrder);  // Debugging: log sort order value
+    // Fix: proper sort order logic
+    let sortOrder = req.query.sort === "desc" ? -1 : 1;
+
     let filter = {};
     if (query) {
       filter = {
@@ -87,13 +87,13 @@ const getAllBanners = async (req, res) => {
     const totalBanners = await Banner.countDocuments(filter);
     const totalPages = Math.ceil(totalBanners / limit);
 
-    const banners = await Banner.find({}, {
+    const banners = await Banner.find(filter, {
         bannerNo: 1,
         images: 1,
         title: 1,
         description: 1
       })
-      .sort({ createdAt: sortOrder })
+      .sort({ [sortBy]: sortOrder })
       .skip((page - 1) * limit)
       .limit(limit);
 
@@ -108,6 +108,7 @@ const getAllBanners = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 
 //✅ Update Banner with Cloudinary Image Upload
