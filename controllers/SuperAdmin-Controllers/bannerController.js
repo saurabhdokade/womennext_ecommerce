@@ -72,7 +72,7 @@ const getAllBanners = async (req, res) => {
       sort = "asc",          
       sortBy = "createdAt",  
       page = 1,
-      limit = 4
+      limit = 10
     } = req.query;
 
     // Case-insensitive search

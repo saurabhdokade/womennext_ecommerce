@@ -1,7 +1,7 @@
 const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const Order = require("../../models/UserModels/orderNow");
 const branchModel = require("../../models/SuperAdminModels/branch");
-
+const{EmergencyFeeModel} = require("../../models/SuperAdminModels/Settings");
 //✅ getAllBranchOrders
 const getAllBranchOrders = async (req, res) => {
   try {
@@ -138,6 +138,15 @@ const getOrderBranchDetails = async (req, res) => {
       });
     }
  
+    // 🔍 Fetch dynamic emergency fee if applicable
+    let emergencyFeeAmount = 0;
+    if (order.emergencyDelivery) {
+      const feeRecord = await EmergencyFeeModel.findOne().sort({ createdAt: -1 });
+      if (feeRecord) {
+        emergencyFeeAmount = feeRecord.feeAmount;
+      }
+    }
+ 
     let matchedBranch = null;
  
     if (order.branchInfo) {
@@ -185,8 +194,9 @@ const getOrderBranchDetails = async (req, res) => {
  
       branchInfo: matchedBranch,
  
-      ProductCode: firstItem?.product?.productCode,
-      ProductBrand: firstItem?.product?.brand,
+    
+    
+      ProductName: firstItem?.product?.brand,
       ProductSubType: firstItem?.product?.productSubType,
       ProductDescription: firstItem?.product?.productDescription,
       Size: firstItem?.product?.size,
@@ -195,7 +205,7 @@ const getOrderBranchDetails = async (req, res) => {
       OrderStatus: order.status,
       PaymentMode: order.paymentMethod,
       DeliveryType: order.emergencyDelivery
-        ? "Emergency (₹20 Extra)"
+        ? `Emergency (₹${emergencyFeeAmount} Extra)`
         : "Normal Delivery",
       GrandTotal: order.totalAmount,
  
@@ -217,6 +227,7 @@ const getOrderBranchDetails = async (req, res) => {
     });
   }
 };
+ 
 
 
 //✅ getOrderStatus

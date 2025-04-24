@@ -75,10 +75,8 @@ const getAllCustomers = async (req, res) => {
 
     const formattedCustomers = customers.map((customer) => ({
       _id: customer._id,
-      fullName: {
-        image: customer.image,
-        name: customer.fullName,
-      },
+      image: customer.image,
+      fullName: customer.fullName,
       phoneNumber: customer.phoneNumber,
       fullAddress: customer.address,
     }));

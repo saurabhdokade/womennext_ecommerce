@@ -1,7 +1,6 @@
 const Order = require("../../models/UserModels/orderNow");
-// const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
-// const userModel = require("../../models/UserModels/User");
 const mongoose = require("mongoose");
+const{EmergencyFeeModel} = require("../../models/SuperAdminModels/Settings");
 
 //✅ Get Order Details by ID
 const getOrderById = async (req, res) => {
@@ -180,17 +179,18 @@ const getUserOrders = async (req, res) => {
 };
 
 //✅ Get View Order Details
+ 
 const getViewOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
-
+ 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid order ID." });
     }
-
+ 
     const order = await Order.findById(orderId)
       .select("-tracking")
       .populate({
@@ -198,15 +198,24 @@ const getViewOrderDetails = async (req, res) => {
         select: "productName image",
       })
       .populate("user", "fullName address");
-
+ 
     if (!order) {
       return res
         .status(404)
         .json({ success: false, message: "Order not found." });
     }
-
+ 
+    // If emergencyDelivery is true, fetch the latest emergency fee
+    let emergencyFee = 0;
+    if (order.emergencyDelivery) {
+      const feeRecord = await EmergencyFeeModel.findOne().sort({ createdAt: -1 });
+      if (feeRecord) {
+        emergencyFee = feeRecord.feeAmount;
+      }
+    }
+ 
     return res.status(200).json({
-      message: "View Order Details reterived successfully",
+      message: "View Order Details retrieved successfully",
       success: true,
       order: {
         id: order._id,
@@ -221,11 +230,12 @@ const getViewOrderDetails = async (req, res) => {
         orderNumber: order._id,
         shippingAddress: order.user?.address || "N/A",
         paymentMethod: order.paymentMethod || "Cash on Delivery",
+        emergencyDelivery: order.emergencyDelivery,
         orderSummary: {
-          price: order.totalAmount,
+          price: order.totalAmount - emergencyFee,
           discount: 0,
           coupons: 0,
-          deliveryCharges: order.deliveryCharges || 0,
+          deliveryCharges: emergencyFee,
           tax: 0,
           totalAmount: order.totalAmount,
         },
@@ -238,6 +248,7 @@ const getViewOrderDetails = async (req, res) => {
       .json({ success: false, message: "Server error", error: error.message });
   }
 };
+ 
 
 
 //✅ trackOrder function
