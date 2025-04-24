@@ -80,7 +80,7 @@ app.use("/api/order", superAdminOrderRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/notification", notificationsRoutes);
-app.use("/api/paymentHistory", superAdminPaymentHistoryRoutes);
+app.use("/api/payment", superAdminPaymentHistoryRoutes);
 
 //✅ Branch Admin Routes
 app.use("/api/branchAdmin", branchAdminRoutes);
@@ -92,7 +92,7 @@ app.use("/api/branchOrder", branchOrderRoutes);
 app.use("/api/branchCustomer", branchAdminCustomerRoutes);
 app.use("/api/branchAdmin/notification", branchNotificationsRoutes);
 app.use("/api/branchAdmin/dashboard", branchAdminDashboardRoutes);
-app.use("/api/branchAdmin/paymentHistory", branchAdminPaymentHistoryRoutes);
+app.use("/api/branchAdmin/payment", branchAdminPaymentHistoryRoutes);
 
 //✅ User Routes
 app.use("/api/user", userRoutes);
