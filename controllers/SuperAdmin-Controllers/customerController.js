@@ -6,7 +6,7 @@ const branchModel = require("../../models/SuperAdminModels/branch")
 //✅ Get All Customers
 const getAllCustomers = async (req, res) => {
   try {
-    const { page = 1, limit, search = "", branch, sortOrder } = req.query;
+    const { page = 1, limit=10, search = "", branch, sortOrder } = req.query;
     const currentPage = parseInt(page);
     const pageLimit = parseInt(limit);
 

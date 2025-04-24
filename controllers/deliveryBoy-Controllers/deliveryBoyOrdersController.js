@@ -46,15 +46,7 @@ const acceptOrder = async (req, res) => {
 
     await userNotification.save();
 
-    // Filter unwanted fields before sending response
-    const {
-      otherReason,
-      cancelledBy,
-      cancelDate,
-     
 
-      ...filteredOrder
-    } = order.toObject();
 
     return res.status(200).json({
       success: true,
@@ -115,16 +107,7 @@ const canceldeliveryBoyOrder = async (req, res) => {
 
     await order.save();
 
-    // Remove unnecessary fields
-    const {
-      otherReason: _other,
-      cancelDate,
-      cancelledBy,
-      createdAt,
-      updatedAt,
-    
-      ...filteredOrder
-    } = order.toObject();
+   
 
     return res.status(200).json({
       message: "Order cancelled successfully by delivery boy",
