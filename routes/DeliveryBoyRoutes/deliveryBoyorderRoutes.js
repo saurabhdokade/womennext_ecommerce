@@ -8,7 +8,7 @@ const deliveryBoyAuthMiddleware = require("../../middlewares/deliveryBoyAuthMidd
 
 //✅deliveryboy page
 router.patch('/accept/:id', deliveryBoyAuthMiddleware, acceptOrder);
-router.patch('/cancel/:orderId', deliveryBoyAuthMiddleware, canceldeliveryBoyOrder);
+router.patch('/cancel/:id', deliveryBoyAuthMiddleware, canceldeliveryBoyOrder);
  
  
 //✅ deliveryboy summery payment 

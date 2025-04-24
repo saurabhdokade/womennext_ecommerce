@@ -51,14 +51,15 @@ const acceptOrder = async (req, res) => {
       otherReason,
       cancelledBy,
       cancelDate,
-      createdAt,
-      updatedAt,
+     
+
       ...filteredOrder
     } = order.toObject();
 
     return res.status(200).json({
+      success: true,
       message: "Order accepted successfully",
-      order: filteredOrder,
+      // order: filteredOrder,
     });
 
   } catch (error) {
