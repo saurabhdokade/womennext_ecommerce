@@ -2,6 +2,7 @@ const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const Order = require("../../models/UserModels/orderNow");
 const branchModel = require("../../models/SuperAdminModels/branch");
 const{EmergencyFeeModel} = require("../../models/SuperAdminModels/Settings");
+
 //✅ getAllBranchOrders
 const getAllBranchOrders = async (req, res) => {
   try {
@@ -10,7 +11,7 @@ const getAllBranchOrders = async (req, res) => {
       page = 1,
       limit = 10,
       sortBy = "createdAt",
-      sortOrder = "desc",
+      sortOrder = "asc",
     } = req.query;
  
     const sortOrderValue = sortOrder === "desc" ? -1 : 1;
