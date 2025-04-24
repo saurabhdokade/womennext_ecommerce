@@ -8,29 +8,30 @@ const branchModel = require("../../models/SuperAdminModels/branch")
 //✅ Get All Customers
 const getAllCustomers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", branch } = req.query;
+    const { page = 1, limit, search = "", branch, sortOrder } = req.query;
     const currentPage = parseInt(page);
     const pageLimit = parseInt(limit);
- 
-    let query = {};
- 
+
+    let query = { isVerified: true };
+
     // Handle search parameters
     if (search) {
-      query = {
-        $or: [
-          { fullName: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-          { phoneNumber: isNaN(search) ? null : Number(search) },
-        ],
-      };
+      const searchRegex = new RegExp(search, "i");
+      const phoneSearch = Number(search);
+      query.$or = [
+        { fullName: { $regex: searchRegex } },
+        { email: { $regex: searchRegex } },
+      ];
+      if (!isNaN(phoneSearch)) {
+        query.$or.push({ phoneNumber: phoneSearch });
+      }
     }
- 
+
     // Fetch branch pincode if branch is provided
     if (branch) {
       const branchInfo = await branchModel.findById(branch).select("servicePinCode");
       const servicePincodes = branchInfo?.servicePinCode || [];
- 
-      // If servicePincodes is empty, return empty data
+
       if (servicePincodes.length === 0) {
         return res.status(200).json({
           success: true,
@@ -42,15 +43,29 @@ const getAllCustomers = async (req, res) => {
           customers: [],
         });
       }
- 
+
       // Add pincode filter
-      query.address = { $regex: `(${servicePincodes.join("|")})`, $options: "i" };
+      query.address = { $regex: servicePincodes.join("|"), $options: "i" };
     }
- 
-    // Aggregate query
+
+    // Determine sorting logic
+    // let sortOption = {};
+    // if (sortOrder === "asc" || sortOrder === "desc") {
+    //   sortOption.fullName = sortOrder === "desc" ? -1 : 1;
+    // } else {
+    //   sortOption.createdAt = -1;
+    // }
+    let sortOption = {};
+    if (sortOrder === "asc" || sortOrder === "desc") {
+      sortOption.fullName = sortOrder === "desc" ? -1 : 1;
+    } else {
+      sortOption.createdAt = -1;
+    }
+
+    // Aggregated query
     const customers = await userModel.aggregate([
       { $match: query },
-      { $sort: { createdAt: -1 } },
+      { $sort: sortOption },
       { $skip: (currentPage - 1) * pageLimit },
       { $limit: pageLimit },
       {
@@ -63,10 +78,10 @@ const getAllCustomers = async (req, res) => {
         },
       },
     ]);
- 
+
     const totalCustomers = await userModel.countDocuments(query);
     const totalPages = Math.ceil(totalCustomers / pageLimit);
- 
+
     const formattedCustomers = customers.map((customer) => ({
       _id: customer._id,
       fullName: {
@@ -76,7 +91,7 @@ const getAllCustomers = async (req, res) => {
       phoneNumber: customer.phoneNumber,
       fullAddress: customer.address,
     }));
- 
+
     return res.status(200).json({
       success: true,
       totalCustomers,
