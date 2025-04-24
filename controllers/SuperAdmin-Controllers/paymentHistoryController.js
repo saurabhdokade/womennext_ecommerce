@@ -89,7 +89,7 @@ const viewPaymentByDeliveryBoy = async (req, res) => {
         grandTotal,
         totalRecords: orders.length,
         paymentHistory: orders.map((order, index) => ({
-          srNo: index + 1,
+  
           productName: order.items.length > 0 && order.items[0].product?.productName ? order.items[0].product.productName : "N/A",
           customerName: order.user?.fullName || "N/A",
           totalAmount: order.totalAmount,
