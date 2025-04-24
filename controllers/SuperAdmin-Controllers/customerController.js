@@ -3,8 +3,6 @@ const Order = require("../../models/UserModels/orderNow");
 const mongoose = require("mongoose");
 const branchModel = require("../../models/SuperAdminModels/branch")
 
-
-
 //✅ Get All Customers
 const getAllCustomers = async (req, res) => {
   try {
@@ -48,13 +46,6 @@ const getAllCustomers = async (req, res) => {
       query.address = { $regex: servicePincodes.join("|"), $options: "i" };
     }
 
-    // Determine sorting logic
-    // let sortOption = {};
-    // if (sortOrder === "asc" || sortOrder === "desc") {
-    //   sortOption.fullName = sortOrder === "desc" ? -1 : 1;
-    // } else {
-    //   sortOption.createdAt = -1;
-    // }
     let sortOption = {};
     if (sortOrder === "asc" || sortOrder === "desc") {
       sortOption.fullName = sortOrder === "desc" ? -1 : 1;

@@ -67,45 +67,43 @@ const addBanner = async (req, res) => {
 //✅ Get all banners
 const getAllBanners = async (req, res) => {
   try {
-    let query = req.query.query || ""; // optional search term
-    let limit = parseInt(req.query.limit) || 4;
-    let page = parseInt(req.query.page) || 1;
+    const {
+      query = "",
+      sort = "asc",          
+      sortBy = "createdAt",  
+      page = 1,
+      limit = 4
+    } = req.query;
 
-    // Default sorting: ascending
-    let sortOrder = req.query.sort === "desc" ? -1 : 1;
+    // Case-insensitive search
+    const filter = {
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
+      ],
+    };
 
-    let filter = {};
-    if (query) {
-      filter = {
-        $or: [
-          { title: { $regex: query, $options: "i" } },
-          { description: { $regex: query, $options: "i" } }
-        ]
-      };
-    }
+    const sortOrder = sort === "desc" ? -1 : 1;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const totalBanners = await Banner.countDocuments(filter);
     const totalPages = Math.ceil(totalBanners / limit);
 
-    const banners = await Banner.find({}, {
-        bannerNo: 1,
-        images: 1,
-        title: 1,
-        description: 1
-      })
-      .sort({ createdAt: sortOrder })
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const banners = await Banner.find(filter)
+      .sort({ [sortBy]: sortOrder })                    // Dynamic sort
+      .collation({ locale: "en", strength: 2 })         // Case-insensitive
+      .skip(skip)
+      .limit(parseInt(limit));
 
     res.status(200).json({
       success: true,
       totalBanners,
       totalPages,
-      currentPage: page,
+      currentPage: parseInt(page),
       banners,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
