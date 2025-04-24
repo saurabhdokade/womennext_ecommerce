@@ -8,9 +8,9 @@ const branchAdminAuthMiddleware = require("../../middlewares/branchAdminMiddlewa
 const router = express.Router();
  
 //✅ Branch Admin Delivery Boy Routes
-router.get("/getAllDeliveryBoys",branchAdminAuthMiddleware, getAllDeliveryBoys);
-router.get("/getDeliveryBoyById/:id", branchAdminAuthMiddleware, getDeliveryBoyById);
-router.get("/getOrderDetailsByDeliveryBoyId/:id", branchAdminAuthMiddleware, getOrderDetailsByDeliveryBoyId);
+router.get("/getAllDeliveryBoys",branchAdminAuthMiddleware,getAllDeliveryBoys);
+router.get("/getDeliveryBoyById/:id",branchAdminAuthMiddleware, getDeliveryBoyById);
+router.get("/getOrderDetailsByDeliveryBoyId/:id",branchAdminAuthMiddleware, getOrderDetailsByDeliveryBoyId);
 
  
 module.exports = router;

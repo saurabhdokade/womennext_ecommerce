@@ -8,14 +8,14 @@ const deliveryBoyAuthMiddleware = require("../../middlewares/deliveryBoyAuthMidd
 
 //✅deliveryboy page
 router.patch('/accept/:id', deliveryBoyAuthMiddleware, acceptOrder);
-router.patch('/cancel/:id', deliveryBoyAuthMiddleware, canceldeliveryBoyOrder);
+router.patch('/cancel/:orderId', deliveryBoyAuthMiddleware, canceldeliveryBoyOrder);
  
  
 //✅ deliveryboy summery payment 
 router.get('/availableOrders', deliveryBoyAuthMiddleware, getAvailableOrders);
 router.get("/:id/details", deliveryBoyAuthMiddleware, getavaliableOrderDetails);
 router.post("/:id/payment", deliveryBoyAuthMiddleware,confirmPayment);
-router.get("/payment/verify", deliveryBoyAuthMiddleware, verifyOnlinePayment);
+router.get("/payment/verify", verifyOnlinePayment);
 router.get("/deliveryboy/summary",  deliveryBoyAuthMiddleware,getDeliveryBoySummary);
 router.get("/details/:id", deliveryBoyAuthMiddleware, getOrderDetails);
  

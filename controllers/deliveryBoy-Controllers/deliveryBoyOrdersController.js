@@ -53,7 +53,6 @@ const acceptOrder = async (req, res) => {
       cancelDate,
       createdAt,
       updatedAt,
-      __v,
       ...filteredOrder
     } = order.toObject();
 
@@ -67,7 +66,6 @@ const acceptOrder = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
  
 //✅ Cancel delivery Boy Order
 const canceldeliveryBoyOrder = async (req, res) => {
@@ -123,7 +121,7 @@ const canceldeliveryBoyOrder = async (req, res) => {
       cancelledBy,
       createdAt,
       updatedAt,
-      __v,
+    
       ...filteredOrder
     } = order.toObject();
 
@@ -137,9 +135,8 @@ const canceldeliveryBoyOrder = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
   
-//✅ Get available orders for delivery boy
+  //✅ Get available orders for delivery boy
   const getAvailableOrders = async (req, res) => {
     try {
       const deliveryBoyId = req.deliveryBoy?.id;
@@ -208,7 +205,6 @@ const canceldeliveryBoyOrder = async (req, res) => {
     }
   };
   
-
   //✅ Get available order details
   const getavaliableOrderDetails = async (req, res) => {
     try {
@@ -451,7 +447,7 @@ const canceldeliveryBoyOrder = async (req, res) => {
     }
   };
 
-  
+
   //✅ Get delivery boy summary
   const getDeliveryBoySummary = async (req, res) => {
     try {
@@ -552,6 +548,7 @@ const canceldeliveryBoyOrder = async (req, res) => {
     }
   };
    
+
   // ✅ Get date-wise order history for delivery boy
   const getDateWiseOrderHistory = async (req, res) => {
     try {

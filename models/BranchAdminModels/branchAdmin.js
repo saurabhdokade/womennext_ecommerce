@@ -10,21 +10,22 @@ const branchAdminSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
+      required: true,
       unique: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: true,
       trim: true,
       minlength: [8, "Password must be at least 8 characters long"],
+      
     },
     contactNumber: {
       type: String,
       required: true,
-      minlength: [10, "Contact number must be 10 digits"],
+      minlength: [10, "Contact number must be 10 digits"]
     },
     otp: {
       type: String, // Used for OTP verification

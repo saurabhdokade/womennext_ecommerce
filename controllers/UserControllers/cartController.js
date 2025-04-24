@@ -2,9 +2,10 @@ const Cart = require("../../models/UserModels/CartModel");
 const Product = require("../../models/SuperAdminModels/Product");
 const Order = require("../../models/UserModels/orderNow");
 const branchModel = require("../../models/SuperAdminModels/branch");
-const branchAdminNotificationModel = require('../../models/BranchAdminModels/branchAdminNotification');
+const branchAdminNotificationModel = require('../../models/BranchAdminModels/branchAdminNotification'); 
 const BranchAdmin = require("../../models/BranchAdminModels/branchAdmin");
 const userNotificationModel = require("../../models/UserModels/userNotification");
+
 //✅ Add Item  To Cart
 const addToCart = async (req, res) => {
   try {
@@ -18,24 +19,24 @@ const addToCart = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Invalid quantity" });
     }
-    
+
     const product = await Product.findById(productId);
     if (!product) {
       return res
         .status(404)
         .json({ success: false, message: "Product not found" });
     }
-    
+
     let cart = await Cart.findOne({ userId });
-    
+
     if (!cart) {
       cart = new Cart({ userId, items: [], totalAmount: 0 });
     }
-    
+
     const existingItemIndex = cart.items.findIndex(
       (item) => item.productId.toString() === productId
     );
-    
+
     if (existingItemIndex !== -1) {
       cart.items[existingItemIndex].quantity += parsedQuantity;
     } else {
@@ -45,21 +46,16 @@ const addToCart = async (req, res) => {
         price: product.price,
       });
     }
-    
+
     cart.totalAmount = cart.items.reduce(
       (sum, item) => sum + item.quantity * item.price,
       0
     );
-    
+
     await cart.save();
-    
-    //Removing saveForLater From the response of postman
-    const cartObject = JSON.parse(JSON.stringify(cart));
-    delete cartObject.savedForLater;
-    
     return res
       .status(200)
-      .json({ success: true, message: "Item added to cart", cart: cartObject });
+      .json({ success: true, message: "Item added to cart", cart });
   } catch (error) {
     console.error("Error:", error);
     return res
@@ -67,14 +63,14 @@ const addToCart = async (req, res) => {
       .json({ success: false, message: "Server Error", error: error.message });
   }
 };
-    
+
 //✅ Get All Cart
 const getCart = async (req, res) => {
   try {
     const userId = req.user.id;
-
+ 
     const cart = await Cart.findOne({ userId }).populate("items.productId");
-
+ 
     if (!cart || cart.items.length === 0) {
       return res.status(200).json({
         success: true,
@@ -85,10 +81,10 @@ const getCart = async (req, res) => {
         },
       });
     }
-
+ 
     return res.status(200).json({
       success: true,
-      message: "Cart get fetched successfully",
+      message: "Cart fetched successfully",
       cart,
     });
   } catch (error) {
@@ -406,7 +402,7 @@ const BuyOrderFromCart = async (req, res) => {
         productImage,
         items: orderItems.length,
         itemTotal: totalAmount - (emergency ? 20 : 0),
-        deliveryCharges: emergency ? 40 : 0,
+        deliveryCharges: emergency ? 20 : 0,
         orderTotal: totalAmount,
       },
     });
@@ -415,6 +411,8 @@ const BuyOrderFromCart = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+ 
+ 
 
 //✅ Save for later
 const saveForLater = async (req, res) => {
@@ -532,6 +530,8 @@ const moveToCart = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   addToCart,
   getCart,
@@ -541,4 +541,4 @@ module.exports = {
   BuyOrderFromCart,
   saveForLater,
   moveToCart,
-};
+}

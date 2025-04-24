@@ -71,7 +71,7 @@ const getAllBanners = async (req, res) => {
     let limit = parseInt(req.query.limit) || 4;
     let page = parseInt(req.query.page) || 1;
 
-    // Fix: proper sort order logic
+    // Default sorting: ascending
     let sortOrder = req.query.sort === "desc" ? -1 : 1;
 
     let filter = {};
@@ -87,13 +87,13 @@ const getAllBanners = async (req, res) => {
     const totalBanners = await Banner.countDocuments(filter);
     const totalPages = Math.ceil(totalBanners / limit);
 
-    const banners = await Banner.find(filter, {
+    const banners = await Banner.find({}, {
         bannerNo: 1,
         images: 1,
         title: 1,
         description: 1
       })
-      .sort({ [sortBy]: sortOrder })
+      .sort({ createdAt: sortOrder })
       .skip((page - 1) * limit)
       .limit(limit);
 
@@ -108,6 +108,8 @@ const getAllBanners = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
 
 
 

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { upload } = require("../../config/cloudinary");
- const {addBanner, getAllBanners, updateBanner, deleteBanner, getDropdownCategoryOptions, getDropdownStatusOptions} = require("../../controllers/SuperAdmin-Controllers/bannerController");
+ const {addBanner, getAllBanners, updateBanner, deleteBanner} = require("../../controllers/SuperAdmin-Controllers/bannerController");
 
  //✅ SuperAdmin Banner Routes
 router.post("/addBanner", upload.array("images", 5), addBanner);

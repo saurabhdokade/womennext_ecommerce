@@ -33,13 +33,15 @@ const AboutUsSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const EmergencyFeeModel = mongoose.model("EmergencyFee", EmergencyFeeSchema);
-const TermsAndConditionsModel = mongoose.model(
-  "TermsAndConditions",
-  TermsAndConditionsSchema
-);
-const PrivacyPolicyModel = mongoose.model("PrivacyPolicy", PrivacyPolicySchema);
-const AboutUsModel = mongoose.model("AboutUs", AboutUsSchema);
+// Use mongoose.models to avoid overwriting models
+const EmergencyFeeModel =
+  mongoose.models.EmergencyFee || mongoose.model("EmergencyFee", EmergencyFeeSchema);
+const TermsAndConditionsModel =
+  mongoose.models.TermsAndConditions || mongoose.model("TermsAndConditions", TermsAndConditionsSchema);
+const PrivacyPolicyModel =
+  mongoose.models.PrivacyPolicy || mongoose.model("PrivacyPolicy", PrivacyPolicySchema);
+const AboutUsModel =
+  mongoose.models.AboutUs || mongoose.model("AboutUs", AboutUsSchema);
 
 module.exports = {
   EmergencyFeeModel,

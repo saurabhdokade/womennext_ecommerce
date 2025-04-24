@@ -108,7 +108,6 @@ const getAllCustomers = async (req, res) => {
 };
  
  
-
 //✅ Get Customer by ID
 const getCustomerById = async (req, res) => {
   try {

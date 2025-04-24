@@ -1,5 +1,5 @@
 const express = require('express');
-const { getPaymentHistory, viewPaymentByDeliveryBoy } = require('../../controllers/SuperAdmin-Controllers/paymentHistoryController');
+const { getPaymentHistory, viewPaymentByDeliveryBoy } = require('../../controllers/SuperAdmin-Controllers/PaymentHistoryController');
 
 const router = express.Router();
 

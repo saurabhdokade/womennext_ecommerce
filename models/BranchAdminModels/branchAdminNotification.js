@@ -1,10 +1,9 @@
 const { Schema, model } = require("mongoose");
- 
 const branchAdminNotificationSchema = new Schema(
     {
         fullName:{
-            type:String,
-            required:false
+            type: String,
+            required: false,
         },
         branchAdminId: {
             type: Schema.Types.ObjectId,

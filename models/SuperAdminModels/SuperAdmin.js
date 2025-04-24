@@ -8,21 +8,19 @@ const SuperAdminSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, "Email is required"],
-    trim: true,
+    required: true,
     unique: true,
     match: [/^\S+@\S+\.\S+$/, "Invalid email format"],
   },
   password: {
     type: String,
-    required: [true, "Password is required"],
-    trim: true,
+    required: true,
     minlength: [8, "Password must be at least 8 characters long"],
   },
   contactNumber: {
     type: String,
     required: true,
-    minlength: [10, "Contact number must be 10 digits"],
+    minlength: [10, "Contact number must be 10 digits"]
   },
   profileImage: {
     type: String,

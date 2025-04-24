@@ -1,5 +1,5 @@
 const express =  require('express')
-const {getPaymentHistory,viewPaymentByDeliveryBoy} =  require('../../controllers/branchAdmin-Controllers/branchAdminPaymentHistoryController')
+const {getPaymentHistory,viewPaymentByDeliveryBoy} =  require('../../controllers/branchAdmin-Controllers/branchPaymentHistoryController')
 
 const router = express.Router()
 

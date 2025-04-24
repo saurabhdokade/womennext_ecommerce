@@ -6,7 +6,7 @@ const Product = require("../../models/SuperAdminModels/Product");
 // ✅ Get Payment History with Proper Product Name Retrieval
 const getPaymentHistory = async (req, res) => {
   try {
-    const { date, paymentMethod, page = 1, limit=10 } = req.query;
+    const { date, paymentMethod, page = 1, limit = 10 } = req.query;
 
     const filter = {};
 
@@ -42,7 +42,6 @@ const getPaymentHistory = async (req, res) => {
       date: new Date(order.orderDate).toLocaleDateString("en-GB"),
       productName: order.items.length > 0 && order.items[0].product?.productName ? order.items[0].product.productName : "N/A", // ✅ Ensure proper product name extraction
       deliveryBoyName: order.deliveryBoy?.fullName || "Not Assigned",
-      paymentMethod: order.paymentMethod,
       status: order.paymentMode ? "Paid" : "Not Paid",
     }));
 
@@ -90,7 +89,7 @@ const viewPaymentByDeliveryBoy = async (req, res) => {
         grandTotal,
         totalRecords: orders.length,
         paymentHistory: orders.map((order, index) => ({
-          _id: order._id,
+          srNo: index + 1,
           productName: order.items.length > 0 && order.items[0].product?.productName ? order.items[0].product.productName : "N/A",
           customerName: order.user?.fullName || "N/A",
           totalAmount: order.totalAmount,
