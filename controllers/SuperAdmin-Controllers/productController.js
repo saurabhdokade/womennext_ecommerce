@@ -31,6 +31,21 @@ const createProduct = async (req, res) => {
     // Capitalize first letter of each word in productName
     const formattedProductName = capitalizeWords(productName);
 
+    // Fetch enum values for the 'brand' field from the ProductModel schema
+    const validBrands = ProductModel.schema.path('brand').enumValues;
+
+    // Check if brand is a valid enum value (dynamically fetched from schema)
+    if (!validBrands.includes(brand)) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `Invalid brand value. Allowed values are: ${validBrands.join(
+            ", "
+          )}`,
+        });
+    }
+
     // Find last valid product with proper productCode
     const lastProduct = await ProductModel.findOne({
       productCode: { $regex: /^PR\d{4}$/ },
@@ -55,7 +70,6 @@ const createProduct = async (req, res) => {
       image: imagePaths,
       availableProductQuantity,
     });
-    
 
     await newProduct.save();
 
@@ -124,7 +138,6 @@ const getAllProducts = async (req, res) => {
       next: hasNext,
       products: formattedProduct,
     });
-
   } catch (error) {
     console.error(error);
     return res.status(500).json({ success: false, message: error.message });
@@ -156,23 +169,38 @@ const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-   const{existingImages}=req.body
+    const { existingImages, brand } = req.body;
 
     let images = [];
     if (Array.isArray(existingImages)) {
       images = [...existingImages];
     }
-  
+
     if (req.files && req.files.length > 0) {
       const newImages = req.files.map((file) => file.path);
       images = [...images, ...newImages];
+    }
+
+    // Fetch enum values for the 'brand' field from the ProductModel schema
+    const validBrands = ProductModel.schema.path('brand').enumValues;
+
+    // Check if brand is a valid enum value (dynamically fetched from schema)
+    if (!validBrands.includes(brand)) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `Invalid brand value. Allowed values are: ${validBrands.join(
+            ", "
+          )}`,
+        });
     }
 
     const updatedProduct = await ProductModel.findByIdAndUpdate(
       id,
       {
         ...req.body,
-        image:images,
+        image: images,
       },
       { new: true, runValidators: true }
     );
