@@ -14,13 +14,13 @@ const isEmpty = (value) =>
 const createEmergencyFee = async (req, res) => {
   const { feeAmount } = req.body;
   if (!feeAmount || isNaN(feeAmount)) {
-    return res.status(400).json({ error: "feeAmount must be a number" });
+    return res.status(400).json({message: "feeAmount must be a number" });
   }
  
   try {
     const existing = await EmergencyFeeModel.findOne();
     if (existing)
-      return res.status(400).json({ error: "Emergency Fee already exists" });
+      return res.status(400).json({ message: "Emergency Fee already exists" });
  
     const fee = await EmergencyFeeModel.create({ feeAmount });
    return res.status(201).json({
@@ -29,7 +29,7 @@ const createEmergencyFee = async (req, res) => {
     feeAmount:fee.feeAmount,
    });
   } catch (err) {
-   return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success:false, error: err.message });
   }
 };
  
@@ -43,7 +43,7 @@ const getEmergencyFee = async (req, res) => {
       data
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success:false, error: err.message });
   }
 };
  
@@ -51,7 +51,7 @@ const getEmergencyFee = async (req, res) => {
 const updateEmergencyFee = async (req, res) => {
   const { feeAmount } = req.body;
   if (!feeAmount || isNaN(feeAmount)) {
-    return res.status(400).json({ error: "feeAmount must be a number" });
+    return res.status(400).json({ message: "feeAmount must be a number" });
   }
  
   try {
@@ -66,7 +66,7 @@ const updateEmergencyFee = async (req, res) => {
     updated
   });
   } catch (err) {
-   return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success:false, error: err.message });
   }
 };
  
@@ -74,12 +74,12 @@ const updateEmergencyFee = async (req, res) => {
 const createTerms = async (req, res) => {
   const { description } = req.body;
   if (isEmpty(description)) {
-    return res.status(400).json({ error: "Description is required" });
+    return res.status(400).json({ message: "Description is required" });
   }
  
   try {
     const exists = await TermsAndConditionsModel.findOne();
-    if (exists) return res.status(400).json({ error: "Terms already exist" });
+    if (exists) return res.status(400).json({ message: "Terms already exist" });
  
     const data = await TermsAndConditionsModel.create({ description });
    return res.status(201).json({
@@ -88,9 +88,10 @@ const createTerms = async (req, res) => {
     data
   });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success:false, error: err.message });
   }
 };
+    
  
 //✅ Get Terms and Conditions
 const getTerms = async (req, res) => {
@@ -102,7 +103,7 @@ const getTerms = async (req, res) => {
     data
   });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success:false, error: err.message });
   }
 };
  
@@ -111,7 +112,7 @@ const getTerms = async (req, res) => {
 const updateTerms = async (req, res) => {
   const { description } = req.body;
   if (isEmpty(description)) {
-    return res.status(400).json({ error: "Description is required" });
+    return res.status(400).json({ message: "Description is required" });
   }
  
   try {
@@ -126,7 +127,7 @@ const updateTerms = async (req, res) => {
     updated
   });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success:false, error: err.message });
   }
 };
  
@@ -135,13 +136,13 @@ const updateTerms = async (req, res) => {
 const createPrivacy = async (req, res) => {
   const { description } = req.body;
   if (isEmpty(description)) {
-    return res.status(400).json({ error: "Description is required" });
+    return res.status(400).json({ message: "Description is required" });
   }
  
   try {
     const exists = await PrivacyPolicyModel.findOne();
     if (exists)
-      return res.status(400).json({ error: "Privacy policy already exists" });
+      return res.status(400).json({ message: "Privacy policy already exists" });
  
     const data = await PrivacyPolicyModel.create({ description });
    return  res.status(201).json({
@@ -150,11 +151,10 @@ const createPrivacy = async (req, res) => {
     data
   });
   } catch (err) {
-   return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success:false, error: err.message });
   }
 };
  
-
 //✅ Get Privacy Policy
 const getPrivacy = async (req, res) => {
   try {
@@ -165,7 +165,7 @@ const getPrivacy = async (req, res) => {
       data
     });
   } catch (err) {
-   return res.status(500).json({ error: err.message });
+   return res.status(500).json({ success:false, error: err.message });
   }
 };
  
@@ -173,7 +173,7 @@ const getPrivacy = async (req, res) => {
 const updatePrivacy = async (req, res) => {
   const { description } = req.body;
   if (isEmpty(description)) {
-    return res.status(400).json({ error: "Description is required" });
+    return res.status(400).json({ message: "Description is required" });
   }
  
   try {
@@ -188,7 +188,7 @@ const updatePrivacy = async (req, res) => {
     updated
   });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success:false, error: err.message });
   }
 };
 
@@ -202,7 +202,7 @@ const createAboutUs = async (req, res) => {
     images = req.files.map((file) => file.path);
   }
   if (isEmpty(description)) {
-    return res.status(400).json({ error: "Description is required" });
+    return res.status(400).json({ message: "Description is required" });
   }
  
   try {
@@ -213,7 +213,7 @@ const createAboutUs = async (req, res) => {
     const data = await AboutUsModel.create({ description, images });
     res.status(201).json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success:false, error: err.message });
   }
 };
  
@@ -227,7 +227,7 @@ const getAboutUs = async (req, res) => {
     data
   });
   } catch (err) {
-   return res.status(500).json({ error: err.message });
+   return res.status(500).json({ success:false, error: err.message });
   }
 };
  
@@ -246,7 +246,7 @@ const updateAboutUs = async (req, res) => {
     images = [...images, ...newImages];
   }
   if (isEmpty(description)) {
-    return res.status(400).json({ error: "Description is required" });
+    return res.status(400).json({ message: "Description is required" });
   }
  
   try {
@@ -261,7 +261,7 @@ const updateAboutUs = async (req, res) => {
     updated
   });
   } catch (err) {
-   return res.status(500).json({ error: err.message });
+   return res.status(500).json({ success:false, error: err.message });
   }
 };
 
