@@ -110,8 +110,9 @@ const canceldeliveryBoyOrder = async (req, res) => {
    
 
     return res.status(200).json({
+      success: true,
       message: "Order cancelled successfully by delivery boy",
-      order: filteredOrder,
+      // order: filteredOrder,
     });
 
   } catch (error) {
