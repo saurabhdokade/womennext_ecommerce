@@ -162,10 +162,12 @@ const getYearDropdownData = async (req, res) => {
 //✅ getBranchNameDropdownData
 const getAllBranchesDropdown = async (req, res) => {
   try {
-    const branches = await branchModel.find({}, { branchName: 1, _id: 0 });
-    const branchNames = branches.map((branch) => branch.branchName);
+    const branches = await branchModel.find().select("branchName");
 
-    return res.status(201).json({ branchNames });
+    return res.status(201).json({
+      success: true,
+      branches,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -177,6 +179,7 @@ const getAllBranchesDropdown = async (req, res) => {
       });
   }
 };
+     
 
 //✅ etBranchOverview
 const getBranchOverview = async (req, res) => {
