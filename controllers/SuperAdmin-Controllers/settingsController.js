@@ -22,9 +22,13 @@ const createEmergencyFee = async (req, res) => {
       return res.status(400).json({ error: "Emergency Fee already exists" });
  
     const fee = await EmergencyFeeModel.create({ feeAmount });
-    res.status(201).json(fee);
+   return res.status(201).json({
+    success:true,
+    message:"Emergency Fee created successfully",
+    feeAmount:fee.feeAmount,
+   });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+   return res.status(500).json({ error: err.message });
   }
 };
  
@@ -32,9 +36,13 @@ const createEmergencyFee = async (req, res) => {
 const getEmergencyFee = async (req, res) => {
   try {
     const data = await EmergencyFeeModel.findOne();
-    res.status(200).json(data);
+    return res.status(200).json({
+      success:true,
+      message:"Emergency Fee fetched successfully",
+      data
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
  
@@ -51,9 +59,13 @@ const updateEmergencyFee = async (req, res) => {
       { feeAmount },
       { new: true }
     );
-    res.status(200).json(updated);
+   return res.status(200).json({
+    success:true,
+    message:"Emergency Fee updated successfully",
+    updated
+  });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+   return res.status(500).json({ error: err.message });
   }
 };
  
@@ -69,9 +81,13 @@ const createTerms = async (req, res) => {
     if (exists) return res.status(400).json({ error: "Terms already exist" });
  
     const data = await TermsAndConditionsModel.create({ description });
-    res.status(201).json(data);
+   return res.status(201).json({
+    success: true,
+    message: "Terms and Conditions created successfully",
+    data
+  });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
  
@@ -79,9 +95,13 @@ const createTerms = async (req, res) => {
 const getTerms = async (req, res) => {
   try {
     const data = await TermsAndConditionsModel.findOne();
-    res.status(200).json(data);
+   return res.status(200).json({
+    success:true,
+    message:"Terms and Conditions fetched successfully",
+    data
+  });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
  
@@ -99,9 +119,13 @@ const updateTerms = async (req, res) => {
       { description },
       { new: true }
     );
-    res.status(200).json(updated);
+   return res.status(200).json({
+    success: true,
+    message: "Terms and Conditions updated successfully",
+    updated
+  });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
  
@@ -119,9 +143,13 @@ const createPrivacy = async (req, res) => {
       return res.status(400).json({ error: "Privacy policy already exists" });
  
     const data = await PrivacyPolicyModel.create({ description });
-    res.status(201).json(data);
+   return  res.status(201).json({
+    success:true,
+    message:"Privacy policy created successfully",
+    data
+  });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+   return res.status(500).json({ error: err.message });
   }
 };
  
@@ -130,9 +158,13 @@ const createPrivacy = async (req, res) => {
 const getPrivacy = async (req, res) => {
   try {
     const data = await PrivacyPolicyModel.findOne();
-    res.status(200).json(data);
+   return res.status(200).json({
+      success:true,
+      message:"Privacy policy fetched successfully",
+      data
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+   return res.status(500).json({ error: err.message });
   }
 };
  
@@ -149,11 +181,16 @@ const updatePrivacy = async (req, res) => {
       { description },
       { new: true }
     );
-    res.status(200).json(updated);
+   return res.status(200).json({
+    success: true,
+    message: "Privacy policy updated successfully",
+    updated
+  });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
+
 
 
 //✅ Create About Us
@@ -183,9 +220,13 @@ const createAboutUs = async (req, res) => {
 const getAboutUs = async (req, res) => {
   try {
     const data = await AboutUsModel.findOne();
-    res.status(200).json(data);
+   return res.status(200).json({
+    success:true,
+    message:"About Us fetched successfully",
+    data
+  });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+   return res.status(500).json({ error: err.message });
   }
 };
  
@@ -207,9 +248,13 @@ const updateAboutUs = async (req, res) => {
       { description, images },
       { new: true }
     );
-    res.status(200).json(updated);
+   return res.status(200).json({
+    success:true,
+    message:"About Us updated successfully",
+    updated
+  });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+   return res.status(500).json({ error: err.message });
   }
 };
 

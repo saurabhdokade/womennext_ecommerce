@@ -7,7 +7,7 @@ const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_live_D3D9CzhhPmwAZe",
   key_secret: process.env.RAZORPAY_KEY_SECRET || "gTPUidHTVpnljtGjLZHUcFV4",
 });
- 
+
 
 //✅ Accept delivery Boy Order
 const acceptOrder = async (req, res) => {
@@ -19,7 +19,7 @@ const acceptOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid Order ID" });
     }
 
-    const order = await Order.findById(id).populate("deliveryBoy").populate("items.product");
+    const order = await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -28,17 +28,16 @@ const acceptOrder = async (req, res) => {
     if (order.deliveryBoy && order.deliveryStatus === "Accepted") {
       return res.status(400).json({
         message: "Order already accepted",
-        deliveryBoy: order.deliveryBoy,
+        deliveryBoyId: order.deliveryBoy,
       });
     }
 
     order.deliveryBoy = deliveryBoyId;
     order.deliveryStatus = "Accepted";
-
     await order.save();
 
     const userNotification = new userNotificationModel({
-      userId: order.user._id,
+      userId: order.user,
       title: "Out for Delivery",
       message: "Out for delivery",
       image: order.items?.[0]?.product?.image?.[0] || null,
@@ -46,12 +45,10 @@ const acceptOrder = async (req, res) => {
 
     await userNotification.save();
 
-
-
     return res.status(200).json({
       success: true,
       message: "Order accepted successfully",
-      // order: filteredOrder,
+      deliveryBoyId: deliveryBoyId,
     });
 
   } catch (error) {
@@ -59,6 +56,7 @@ const acceptOrder = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
  
 //✅ Cancel delivery Boy Order
 const canceldeliveryBoyOrder = async (req, res) => {
@@ -112,7 +110,8 @@ const canceldeliveryBoyOrder = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Order cancelled successfully by delivery boy",
-      // order: filteredOrder,
+      cancelReason: order.cancelReason,
+      otherReason: order.otherReason,
     });
 
   } catch (error) {

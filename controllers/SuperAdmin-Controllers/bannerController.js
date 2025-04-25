@@ -107,9 +107,27 @@ const getAllBanners = async (req, res) => {
   }
 };
 
-
-
-
+const getBannerById = async(req, res) =>{
+  try {
+    const { id } = req.params;
+    const banner = await Banner.findById(id);
+    if (!banner) {
+      return res.status(404).json({
+        success: false,
+        message: "Banner not found"
+      });
+    }
+    res.status(200).json({
+      success: true,
+      banner
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 //✅ Update Banner with Cloudinary Image Upload
 const updateBanner = async (req, res) => {
@@ -179,6 +197,7 @@ const deleteBanner = async (req, res) => {
 module.exports = {
   addBanner,
   getAllBanners,
+  getBannerById,
   updateBanner,
   deleteBanner,
 };

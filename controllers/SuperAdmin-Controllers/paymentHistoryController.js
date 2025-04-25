@@ -93,12 +93,13 @@ const viewPaymentByDeliveryBoy = async (req, res) => {
           productName: order.items.length > 0 && order.items[0].product?.productName ? order.items[0].product.productName : "N/A",
           customerName: order.user?.fullName || "N/A",
           totalAmount: order.totalAmount,
-          status: order.paymentMode ? "Delivered" : "Not Delivered Yet",
+          status: order.deliveryStatus || "Not Given By Delivery Boy Yet"
         }))
       });
     } catch (error) {
       res.status(500).json({ message: "Server error.", error: error.message });
     }
   };
+  
 
 module.exports = { getPaymentHistory, viewPaymentByDeliveryBoy };
