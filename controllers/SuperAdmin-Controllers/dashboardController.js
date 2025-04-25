@@ -3,11 +3,37 @@ const deliveryModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const branchModel = require("../../models/SuperAdminModels/branch");
 const Order = require("../../models/UserModels/orderNow");
 
+// 🧮 Utility: Percentage change
+const calculatePercentageChange = (current, previous) => {
+  if (previous === 0) return "0.0";
+  return (((current - previous) / previous) * 100).toFixed(1);
+};
+
+// 📆 Utility: Start of the month
+const getStartOfMonth = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+};
+
 //✅ getTotalBranches
-const getAllBranchesCount= async (req, res) => {
+const getAllBranchesCount = async (req, res) => {
   try {
-    const totalBranches = await branchModel.countDocuments();
-    return res.status(200).json({ totalBranches });
+    const startOfMonth = getStartOfMonth();
+
+    const [totalBranches, thisMonth] = await Promise.all([
+      branchModel.countDocuments(),
+      branchModel.countDocuments({ createdAt: { $gte: startOfMonth } }),
+    ]);
+
+    const previous = totalBranches - thisMonth;
+    const changePercent = calculatePercentageChange(thisMonth, previous);
+
+    return res.status(200).json({
+      success: true,
+      totalBranches,
+      thisMonth,
+      changePercent: `${changePercent}%`,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -23,8 +49,22 @@ const getAllBranchesCount= async (req, res) => {
 //✅ getTotalDelieveryBoys
 const getAllDelieveryBoysCount = async (req, res) => {
   try {
-    const totalDelieveryBoys = await deliveryModel.countDocuments();
-    return res.status(200).json({ totalDelieveryBoys });
+    const startOfMonth = getStartOfMonth();
+
+    const [totalDeliveryBoys, thisMonth] = await Promise.all([
+      deliveryModel.countDocuments(),
+      deliveryModel.countDocuments({ createdAt: { $gte: startOfMonth } }),
+    ]);
+
+    const previous = totalDeliveryBoys - thisMonth;
+    const changePercent = calculatePercentageChange(thisMonth, previous);
+
+    return res.status(200).json({
+      success: true,
+      totalDeliveryBoys,
+      thisMonth,
+      changePercent: `${changePercent}%`,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -36,12 +76,26 @@ const getAllDelieveryBoysCount = async (req, res) => {
       });
   }
 };
- 
+
 //✅ getAllCustomers
 const getAllCustomersCount = async (req, res) => {
   try {
-    const totalCustomers = await userModel.countDocuments();
-    return res.status(200).json({ totalCustomers });
+    const startOfMonth = getStartOfMonth();
+
+    const [totalCustomers, thisMonth] = await Promise.all([
+      userModel.countDocuments(),
+      userModel.countDocuments({ createdAt: { $gte: startOfMonth } }),
+    ]);
+
+    const previous = totalCustomers - thisMonth;
+    const changePercent = calculatePercentageChange(thisMonth, previous);
+
+    return res.status(200).json({
+      success: true,
+      totalCustomers,
+      thisMonth,
+      changePercent: `${changePercent}%`,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -53,12 +107,26 @@ const getAllCustomersCount = async (req, res) => {
       });
   }
 };
-   
+
 //✅ get All Orders
 const getAllOrdersCount = async (req, res) => {
   try {
-    const orders = await Order.countDocuments();
-    return res.status(200).json({ orders });
+    const startOfMonth = getStartOfMonth();
+
+    const [totalOrders, thisMonth] = await Promise.all([
+      Order.countDocuments(),
+      Order.countDocuments({ createdAt: { $gte: startOfMonth } }),
+    ]);
+
+    const previous = totalOrders - thisMonth;
+    const changePercent = calculatePercentageChange(thisMonth, previous);
+
+    return res.status(200).json({
+      success: true,
+      totalOrders,
+      thisMonth,
+      changePercent: `${changePercent}%`,
+    });
   } catch (error) {
     console.log(error);
     return res
@@ -72,7 +140,7 @@ const getAllOrdersCount = async (req, res) => {
 };
 
 //✅getYearDropdownData
-const  getYearDropdownData = async (req, res) => {
+const getYearDropdownData = async (req, res) => {
   try {
     const years = [];
     for (let year = 2000; year <= 2030; year++) {
@@ -283,7 +351,7 @@ const getIncomeOverview = async (req, res) => {
     const dayMap = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
     const incomeData = [];
 
-    for (let i = 0; i <= 7; i++) {
+    for (let i = 0; i <= 6; i++) {
       const dayStart = new Date(startOfWeek);
       dayStart.setDate(startOfWeek.getDate() + i);
       dayStart.setHours(0, 0, 0, 0);
@@ -335,4 +403,4 @@ module.exports = {
   getBranchOverview,
   getDeliveryReport,
   getIncomeOverview,
-}
+};
