@@ -351,7 +351,7 @@ const getIncomeOverview = async (req, res) => {
     const dayMap = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
     const incomeData = [];
 
-    for (let i = 0; i <= 7; i++) {
+    for (let i = 0; i <= 6; i++) {
       const dayStart = new Date(startOfWeek);
       dayStart.setDate(startOfWeek.getDate() + i);
       dayStart.setHours(0, 0, 0, 0);
