@@ -93,7 +93,7 @@ const viewPaymentByDeliveryBoy = async (req, res) => {
           productName: order.items.length > 0 && order.items[0].product?.productName ? order.items[0].product.productName : "N/A",
           customerName: order.user?.fullName || "N/A",
           totalAmount: order.totalAmount,
-          status: order.paymentMode ? "Paid" : "Not Paid",
+          status: order.paymentMode ? "Delivered" : "Not Delivered Yet"
         }))
       });
     } catch (error) {
