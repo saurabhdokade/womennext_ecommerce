@@ -4,16 +4,20 @@ const Testimonial = require("../../models/SuperAdminModels/Testimonial");
 const createTestimonial = async (req, res) => {
   try {
     const { name, subtitle, feedback, status } = req.body;
-    let imagePaths = [];
 
-    if (req.files && req.files.length > 0) {
-      imagePaths = req.files.map((file) => file.path);
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Image is required.",
+      });
     }
+    const image = req.file.path; 
+    // console.log("string:",image);
 
     const newTestimonial = await Testimonial.create({
       name,
       subtitle,
-      image: imagePaths,
+      image,
       feedback,
       status,
     });
@@ -35,10 +39,10 @@ const createTestimonial = async (req, res) => {
 //✅ Get all testimonials
 const getAllTestimonials = async (req, res) => {
   try {
-    let { page, limit, search, sortBy, sortOrder } = req.query;
+    let { page=1, limit=10, search, sortBy, sortOrder } = req.query;
 
-    page = parseInt(page) || 1;
-    limit = parseInt(limit) || 10;
+    page = parseInt(page);
+    limit = parseInt(limit);
     const skip = (page - 1) * limit;
 
     //Implemented Sort

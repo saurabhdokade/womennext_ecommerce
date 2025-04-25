@@ -11,10 +11,10 @@ const {
 const {upload} = require("../../config/cloudinary")
  
 //✅ SuperAdmin Testimonial Routes
-router.post('/createTestimonial', upload.array("image",1), createTestimonial);
+router.post('/createTestimonial', upload.single("image"), createTestimonial);
 router.get('/getAllTestimonials', getAllTestimonials);
 router.get('/getTestimonialById/:id', getTestimonialById);
-router.put('/updateTestimonial/:id', upload.array("image",1),updateTestimonial);
+router.put('/updateTestimonial/:id', upload.single("image"),updateTestimonial);
 router.delete('/deleteTestimonial/:id', deleteTestimonial);
 router.get('/getTestimonialStatus', getTestimonialStatus);
  

@@ -166,7 +166,6 @@ const updateBanner = async (req, res) => {
 };
 
 
-
 //✅ Delete Banner
 const deleteBanner = async (req, res) => {
   try {
