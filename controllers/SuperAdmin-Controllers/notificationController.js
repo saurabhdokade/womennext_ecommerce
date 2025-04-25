@@ -45,7 +45,7 @@ const addNotification = async (req, res) => {
         if (!notificationTitle || !notificationMessage || !usersType) {
             return res.status(400).json({
                 success: false,
-                message: "Notification title, message, and user type are required.",
+                message: "notificationTitle, notificationMessage & usersType are required.",
             });
         }
  
