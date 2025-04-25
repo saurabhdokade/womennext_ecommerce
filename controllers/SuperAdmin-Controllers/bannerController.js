@@ -13,21 +13,14 @@ const addBanner = async (req, res) => {
       });
     }
 
-    if (!req.files || req.files.length === 0) {
+    if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "At least one image is required.",
+        message: "Image is required.",
       });
     }
 
-    if (req.files.length > 5) {
-      return res.status(400).json({
-        success: false,
-        message: "You can upload a maximum of 5 images.",
-      });
-    }
-
-    const images = req.files.map((file) => file.path);
+    const image = req.file.path; // ✅ Store single image path
 
     // 🔢 Generate next Banner No.
     const lastBanner = await Banner.findOne().sort({ createdAt: -1 });
@@ -43,7 +36,7 @@ const addBanner = async (req, res) => {
     const newBanner = new Banner({
       title,
       description,
-      images,
+      image, // ✅ Single image URL
       bannerNo: nextBannerNo,
     });
 
@@ -63,6 +56,7 @@ const addBanner = async (req, res) => {
     });
   }
 };
+
 
 //✅ Get all banners
 const getAllBanners = async (req, res) => {
@@ -107,6 +101,7 @@ const getAllBanners = async (req, res) => {
   }
 };
 
+//✅ Get Banner by ID
 const getBannerById = async(req, res) =>{
   try {
     const { id } = req.params;
@@ -135,12 +130,6 @@ const updateBanner = async (req, res) => {
     const { id } = req.params;
     const { title, description } = req.body;
 
-    let updateData = {};
-
-    if (title) updateData.title = title;
-    if (description) updateData.description = description;
-  
-
     const existingBanner = await Banner.findById(id);
     if (!existingBanner) {
       return res
@@ -148,28 +137,34 @@ const updateBanner = async (req, res) => {
         .json({ success: false, message: "Banner not found" });
     }
 
-    let uploadedImages = existingBanner.images || [];
+    // Build update data object
+    let updateData = {};
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
 
-    if (req.files && req.files.length > 0) {
-      for (let file of req.files) {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: "Women_Care_Banners",
-        });
-        uploadedImages.push(result.secure_url);
-      }
+    // If new image is uploaded
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "Women_Care_Banners",
+      });
+      updateData.image = result.secure_url; // Replace old image
     }
-
-    updateData.images = uploadedImages;
 
     const updatedBanner = await Banner.findByIdAndUpdate(id, updateData, {
       new: true,
     });
 
-    res.status(200).json({ success: true, banner: updatedBanner });
+    return res.status(200).json({
+      success: true,
+      message: "Banner updated successfully",
+      banner: updatedBanner,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Update error:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 
 //✅ Delete Banner

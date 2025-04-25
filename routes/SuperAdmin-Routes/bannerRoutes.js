@@ -4,10 +4,11 @@ const { upload } = require("../../config/cloudinary");
  const {addBanner, getAllBanners, getBannerById, updateBanner, deleteBanner} = require("../../controllers/SuperAdmin-Controllers/bannerController");
 
  //✅ SuperAdmin Banner Routes
-router.post("/addBanner", upload.array("images", 5), addBanner);
+router.post("/addBanner", upload.single("image"), addBanner);
 router.get("/getAllBanner", getAllBanners);
 router.get("/getBannerById/:id", getBannerById);
+router.put("/updateBanner/:id", upload.single("image"), updateBanner);
 router.delete("/deleteBanner/:id", deleteBanner);
-router.put("/updateBanner/:id", upload.array("images", 5), updateBanner);
+
 
 module.exports = router;

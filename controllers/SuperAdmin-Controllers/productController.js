@@ -55,6 +55,7 @@ const createProduct = async (req, res) => {
       image: imagePaths,
       availableProductQuantity,
     });
+    
 
     await newProduct.save();
 
