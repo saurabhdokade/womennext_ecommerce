@@ -206,35 +206,38 @@ const getBranchById = async (req, res) => {
 const updateBranch = async (req, res) => {
   try {
     const { id } = req.params;
+    const {
+      branchName,
+      branchManagerName,
+      email,
+      password,
+      phoneNumber,
+      fullAddress,
+      servicePinCode
+    } = req.body;
 
-    // Validate input
-    if (!Array.isArray(req.body.servicePinCode)) {
-      return res.status(400).json({
-        message: "servicePinCode should be an array of 6-digit numbers",
-        success: false,
-      });
+    // Validate servicePinCode if provided
+    let uniquePinCodes;
+    if (servicePinCode) {
+      if (!Array.isArray(servicePinCode)) {
+        return res.status(400).json({
+          message: "servicePinCode should be an array of 6-digit numbers",
+          success: false,
+        });
+      }
+
+      const isValid = servicePinCode.every(pin => /^\d{6}$/.test(pin.toString()));
+      if (!isValid) {
+        return res.status(400).json({
+          message: "Each pin code must be a valid 6-digit number",
+          success: false,
+        });
+      }
+
+      uniquePinCodes = [...new Set(servicePinCode.map(pin => pin.toString()))];
     }
 
-    // Validate each item is a 6-digit number
-    const isValid = req.body.servicePinCode.every((pin) =>
-      /^\d{6}$/.test(pin.toString())
-    );
-
-    if (!isValid) {
-      return res.status(400).json({
-        message: "Each pin code must be a 6-digit number",
-        success: false,
-      });
-    }
-
-    // Remove duplicate pin codes
-    const uniquePinCodes = [
-      ...new Set(req.body.servicePinCode.map((pin) => pin.toString())),
-    ];
-
-    // Fetch existing branch
     const existingBranch = await branchModel.findById(id);
-
     if (!existingBranch) {
       return res.status(404).json({
         message: "Branch not found",
@@ -242,13 +245,23 @@ const updateBranch = async (req, res) => {
       });
     }
 
-    // Replace servicePinCode with unique values
-    existingBranch.servicePinCode = uniquePinCodes;
+    if (branchName !== undefined) existingBranch.branchName = branchName;
+    if (branchManagerName !== undefined) existingBranch.branchManagerName = branchManagerName;
+    if (email !== undefined) existingBranch.email = email;
+    if (password !== undefined) existingBranch.password = password; 
+    if (phoneNumber !== undefined) existingBranch.phoneNumber = phoneNumber;
+    if (fullAddress !== undefined) existingBranch.fullAddress = fullAddress;
+    if (uniquePinCodes !== undefined) existingBranch.servicePinCode = uniquePinCodes;
 
+
+    if (password !== undefined) {
+      const salt = await bcrypt.genSalt(10);
+      existingBranch.password = await bcrypt.hash(password, salt);
+    }
     const updatedBranch = await existingBranch.save();
 
     return res.status(200).json({
-      message: "Branch pin codes updated successfully",
+      message: "Branch updated successfully",
       success: true,
       branch: updatedBranch,
     });
