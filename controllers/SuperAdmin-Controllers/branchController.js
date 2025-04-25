@@ -1,6 +1,5 @@
 const branchModel = require("../../models/SuperAdminModels/branch");
 const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
-const ProductModel = require("../../models/SuperAdminModels/Product");
 const BranchAdminProductModel = require("../../models/BranchAdminModels/branchAdminProducts");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
@@ -130,7 +129,13 @@ const getBranchById = async (req, res) => {
     // Step 1: Find the branch
     const rawbranch = await branchModel
       .findById(id)
-      .select({ phoneNumber: 1, servicePinCode: 1, fullAddress: 1, _id: 0 })
+      .select({
+        phoneNumber: 1,
+        servicePinCode: 1,
+        fullAddress: 1,
+        _id: 1,
+        branchName: 1,
+      })
       .lean();
 
     if (!rawbranch) {
@@ -140,16 +145,27 @@ const getBranchById = async (req, res) => {
     }
 
     const branch = {
-      ...rawbranch,
+      phoneNumber: rawbranch.phoneNumber,
+      address: rawbranch.fullAddress,
       servicePinCode: Array.isArray(rawbranch.servicePinCode)
         ? rawbranch.servicePinCode.join(", ")
         : rawbranch.servicePinCode,
     };
 
-    // Step 2: Get delivery boys
-    const deliveryBoys = await DeliveryBoyModel.find({})
-      .select("userId fullName email phoneNumber address").sort({ createdAt: -1 }).limit(3)
-      .lean();
+    // Step 2: Get delivery boys and products
+    const [deliveryBoys, products] = await Promise.all([
+      DeliveryBoyModel.find({ branch: rawbranch.branchName })
+        .select("userId fullName email phoneNumber address")
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .lean(),
+
+      BranchAdminProductModel.find({ branch: id })
+        .populate("product")
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .lean(),
+    ]);
 
     const formattedDeliveryBoys = deliveryBoys.map((boy) => ({
       userId: boy.userId,
@@ -159,21 +175,13 @@ const getBranchById = async (req, res) => {
       Address: boy.address,
     }));
 
-    // Step 3: Get products
-    const products = await ProductModel.find({})
-      .select(
-        "productCode brand productName size availableProductQuantity price"
-      ).sort({ createdAt: -1 }).limit(3)
-      .lean();
-
     const formattedProducts = products.map((product) => ({
-      id: product._id,
-      productCode: product.productCode,
-      brand: product.brand,
-      productName: product.productName,
-      size: product.size,
-      availableQuantity: product.availableProductQuantity,
-      price: product.price,
+      productCode: product.product?.productCode || "",
+      brand: product.product?.brand || "",
+      productName: product.product?.productName || "",
+      size: product.product?.size || "",
+      availableQuantity: product.quantity || 0,
+      price: product.product?.price || "",
     }));
 
     // Step 4: Return response
@@ -208,8 +216,8 @@ const updateBranch = async (req, res) => {
     }
 
     // Validate each item is a 6-digit number
-    const isValid = req.body.servicePinCode.every(
-      (pin) => /^\d{6}$/.test(pin.toString())
+    const isValid = req.body.servicePinCode.every((pin) =>
+      /^\d{6}$/.test(pin.toString())
     );
 
     if (!isValid) {
@@ -220,7 +228,9 @@ const updateBranch = async (req, res) => {
     }
 
     // Remove duplicate pin codes
-    const uniquePinCodes = [...new Set(req.body.servicePinCode.map(pin => pin.toString()))];
+    const uniquePinCodes = [
+      ...new Set(req.body.servicePinCode.map((pin) => pin.toString())),
+    ];
 
     // Fetch existing branch
     const existingBranch = await branchModel.findById(id);
@@ -256,7 +266,7 @@ const updateBranch = async (req, res) => {
 const deleteBranch = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Delete entire branch
     await branchModel.findByIdAndDelete(id);
     return res.status(200).json({
@@ -273,21 +283,47 @@ const deleteBranch = async (req, res) => {
   }
 };
 
-
 //✅ get Available Delivery Boys
 const availableDeliveryBoys = async (req, res) => {
   try {
+    const { branchId } = req.params;
     let { page = 1, limit = 10 } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
 
-    const totalCount = await DeliveryBoyModel.countDocuments({});
+    // Convert and validate pagination inputs
+    page = Math.max(1, parseInt(page, 10));
+    limit = Math.max(1, parseInt(limit, 10));
 
-    const deliveryBoys = await DeliveryBoyModel.find({})
-      .select("userId fullName email phoneNumber address")
-      .skip((page - 1) * limit)
-      .limit(limit)
+    // Validate MongoDB ObjectId format
+    if (!branchId || !/^[0-9a-fA-F]{24}$/.test(branchId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid branch ID",
+      });
+    }
+
+    // Fetch branchName only
+    const branch = await branchModel
+      .findById(branchId)
+      .select("branchName")
       .lean();
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    const query = { branch: branch.branchName };
+
+    // Execute both count and find operations in parallel
+    const [totalCount, deliveryBoys] = await Promise.all([
+      DeliveryBoyModel.countDocuments(query),
+      DeliveryBoyModel.find(query)
+        .select("userId fullName email phoneNumber address")
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+    ]);
 
     const totalPages = Math.ceil(totalCount / limit);
     const hasPrevious = page > 1;
@@ -321,28 +357,30 @@ const availableProducts = async (req, res) => {
   try {
     const { branchId } = req.params;
     let { page = 1, limit = 10 } = req.query;
- 
+
     // Ensure pagination is a number
     page = parseInt(page);
     limit = parseInt(limit);
- 
-    // Count total number of products in the given branch
-    const totalCount = await BranchAdminProductModel.countDocuments({
-      branch: branchId,
-    });
- 
-    // Pagination logic: Skip and limit applied
-    const data = await BranchAdminProductModel.find({ branch: branchId })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .select("product quantity")
-      .populate("product", "productCode brand productName size price");
- 
+
+    const [totalCount, data] = await Promise.all([
+      // Count total number of products in the given branch
+      BranchAdminProductModel.countDocuments({
+        branch: branchId,
+      }),
+
+      // Pagination logic: Skip and limit applied
+      BranchAdminProductModel.find({ branch: branchId })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select("product quantity")
+        .populate("product", "productCode brand productName size price"),
+    ]);
+
     // Calculate pagination details
     const totalPages = Math.ceil(totalCount / limit);
     const hasPrevious = page > 1;
     const hasNext = page < totalPages;
- 
+
     const formattedProducts = data.map((item) => ({
       id: item._id,
       productCode: item.product.productCode,
@@ -352,7 +390,7 @@ const availableProducts = async (req, res) => {
       availableQuantity: item.quantity,
       price: item.product.price,
     }));
- 
+
     res.status(200).json({
       success: true,
       totalPages,
@@ -373,21 +411,21 @@ const addQuantity = async (req, res) => {
   try {
     const { id } = req.params;
     const { quantity } = req.body;
- 
+
     // Basic validations
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid branch product ID." });
     }
- 
+
     if (!quantity || typeof quantity !== "number" || quantity <= 0) {
       return res.status(400).json({
         success: false,
         message: "Please provide a valid quantity greater than 0.",
       });
     }
- 
+
     // Fetch branch product and associated product in one go
     const branchProduct = await BranchAdminProductModel.findById(id).populate({
       path: "product",
@@ -398,23 +436,23 @@ const addQuantity = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Branch Product Not found" });
     }
- 
+
     const available = branchProduct.product?.availableProductQuantity ?? 0;
- 
+
     if (quantity > available) {
       return res.status(400).json({
         success: false,
         message: `Insufficient stock. Only ${available} item(s) available.`,
       });
     }
- 
+
     // update both quantities
     branchProduct.quantity += quantity;
     branchProduct.product.availableProductQuantity -= quantity;
- 
+
     // Save both documents in parallel
     await Promise.all([branchProduct.save(), branchProduct.product.save()]);
- 
+
     return res.status(200).json({
       success: true,
       message: `${quantity} unit(s) added successfully.`,
@@ -426,27 +464,27 @@ const addQuantity = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
- 
+
 //✅ Remove product quantity
 const removeQuantity = async (req, res) => {
   try {
     const { id } = req.params;
     const { quantity } = req.body;
- 
+
     // Basic validations
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid branch product ID." });
     }
- 
+
     if (!quantity || typeof quantity !== "number" || quantity <= 0) {
       return res.status(400).json({
         success: false,
         message: "Please provide a valid quantity greater than 0.",
       });
     }
- 
+
     // Fetch branch product and associated product in one go
     const branchProduct = await BranchAdminProductModel.findById(id).populate({
       path: "product",
@@ -457,21 +495,21 @@ const removeQuantity = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Branch Product Not found" });
     }
- 
+
     if (quantity > branchProduct.quantity) {
       return res.status(400).json({
         success: false,
         message: `Cannot remove ${quantity} unit(s). Only ${branchProduct.quantity} available in branch stock.`,
       });
     }
- 
+
     // Update both branch and main product stock
     branchProduct.quantity -= quantity;
     branchProduct.product.availableProductQuantity += quantity;
- 
+
     // Save both documents in parallel
     await Promise.all([branchProduct.save(), branchProduct.product.save()]);
- 
+
     return res.status(200).json({
       success: true,
       message: `${quantity} unit(s) removed successfully.`,
@@ -483,8 +521,6 @@ const removeQuantity = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
- 
- 
 
 module.exports = {
   createBranch,
