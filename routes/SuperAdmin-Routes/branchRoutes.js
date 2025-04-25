@@ -9,7 +9,7 @@ router.get('/getAllBranches', getAllBranches);
 router.get('/getBranchById/:id', getBranchById);
 router.put('/updateBranch/:id', updateBranch);
 router.delete('/deleteBranch/:id', deleteBranch);
-router.get('/availableDeliveryBoys', availableDeliveryBoys);
+router.get('/availableDeliveryBoys/:branchId', availableDeliveryBoys);
 router.get('/availableProducts/:branchId', availableProducts);
 router.put('/addQuantity/:id', addQuantity);
 router.put('/removeQuantity/:id', removeQuantity);
