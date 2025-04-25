@@ -123,6 +123,7 @@ const getAllProducts = async (req, res) => {
       next: hasNext,
       products: formattedProduct,
     });
+
   } catch (error) {
     console.error(error);
     return res.status(500).json({ success: false, message: error.message });
@@ -153,33 +154,24 @@ const getProductById = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { productCode } = req.body;
 
-    // Check if productCode already exists in other products
-    if (productCode) {
-      const existingProduct = await ProductModel.findOne({
-        productCode,
-        _id: { $ne: id }, // exclude current product
-      });
+   const{existingImages}=req.body
 
-      if (existingProduct) {
-        return res.status(400).json({
-          success: false,
-          message: "Product code already exists in another product",
-        });
-      }
+    let images = [];
+    if (Array.isArray(existingImages)) {
+      images = [...existingImages];
     }
-
-    let imagePaths = [];
+  
     if (req.files && req.files.length > 0) {
-      imagePaths = req.files.map((file) => file.path);
+      const newImages = req.files.map((file) => file.path);
+      images = [...images, ...newImages];
     }
 
     const updatedProduct = await ProductModel.findByIdAndUpdate(
       id,
       {
         ...req.body,
-        image: imagePaths.length > 0 ? imagePaths : req.body.image,
+        image:images,
       },
       { new: true, runValidators: true }
     );

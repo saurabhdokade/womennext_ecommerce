@@ -4,7 +4,8 @@ const {
   PrivacyPolicyModel,
   AboutUsModel,
 } = require("../../models/SuperAdminModels/Settings");
- 
+
+
 //✅ isEmpty Function
 const isEmpty = (value) =>
   !value || (Array.isArray(value) && value.length === 0);
@@ -232,11 +233,17 @@ const getAboutUs = async (req, res) => {
  
 //✅ Update About Us
 const updateAboutUs = async (req, res) => {
-  const { description } = req.body;
+  const { existingImages, description } = req.body;
  
+  // Combine existing and new image paths
   let images = [];
+  if (Array.isArray(existingImages)) {
+    images = [...existingImages];
+  }
+
   if (req.files && req.files.length > 0) {
-    images = req.files.map((file) => file.path);
+    const newImages = req.files.map((file) => file.path);
+    images = [...images, ...newImages];
   }
   if (isEmpty(description)) {
     return res.status(400).json({ error: "Description is required" });

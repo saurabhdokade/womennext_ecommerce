@@ -16,9 +16,8 @@ const productSchema = new Schema(
             required: [true, "Brand name is required"],
             trim: true,
             enum: [
-                "Whisper", "Stayfree", "VWash", "Pee Safe", "Plush", "Sirona",
-                "Himalaya", "Carmesi", "Paree", "PeeBuddy", "Azah", "FabPads",
-                "Bella", "Nua", "The Woman’s Company", "Namyaa", "Plentiful", "Bey Bee",
+                "whisper", "Stayfree", "Sofy", "always",
+                "natracare"
             ],
         },
         productName: {
