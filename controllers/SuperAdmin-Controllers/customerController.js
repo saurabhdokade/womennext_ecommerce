@@ -1,12 +1,12 @@
 const userModel = require("../../models/UserModels/User");
 const Order = require("../../models/UserModels/orderNow");
 const mongoose = require("mongoose");
-const branchModel = require("../../models/SuperAdminModels/branch")
+const branchModel = require("../../models/SuperAdminModels/branch");
 
 //✅ Get All Customers
 const getAllCustomers = async (req, res) => {
   try {
-    const { page = 1, limit=10, search = "", branch, sortOrder } = req.query;
+    const { page = 1, limit = 10, search = "", branch, sortOrder } = req.query;
     const currentPage = parseInt(page);
     const pageLimit = parseInt(limit);
 
@@ -27,7 +27,7 @@ const getAllCustomers = async (req, res) => {
 
     // Fetch branch pincode if branch is provided
     if (branch) {
-      const branchInfo = await branchModel.findById(branch).select("servicePinCode");
+      const branchInfo = await branchModel.findOne({ branchName: branch }).select("servicePinCode");
       const servicePincodes = branchInfo?.servicePinCode || [];
 
       if (servicePincodes.length === 0) {
@@ -95,8 +95,8 @@ const getAllCustomers = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
- 
- 
+
+
 //✅ Get Customer by ID
 const getCustomerById = async (req, res) => {
   try {
