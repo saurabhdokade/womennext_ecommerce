@@ -13,25 +13,24 @@ const getPaymentHistory = async (req, res) => {
 
     filter.deliveryStatus = "Delivered";
 
- 
-    // ✅ Parse and validate date
     if (date) {
-      const parsedDate = new Date(date);
+      const [day, month, year] = date.split("/").map(Number);
+      const parsedDate = new Date(year, month - 1, day); // JavaScript me month 0-based hota hai
+
       if (!isNaN(parsedDate.getTime())) {
         const startOfDay = new Date(parsedDate.setHours(0, 0, 0, 0));
         const endOfDay = new Date(parsedDate.setHours(23, 59, 59, 999));
         filter.orderDate = { $gte: startOfDay, $lte: endOfDay };
       } else {
-        return res
-          .status(400)
-          .json({
-            message: "Invalid date format. Please provide a valid date.",
-          });
+        return res.status(400).json({
+          message: "Invalid date format. Please provide a valid date.",
+        });
       }
     }
 
-    if (paymentMethod) filter.paymentMethod = paymentMethod;
-
+    if (paymentMethod) {
+      filter.paymentMethod = paymentMethod;
+    }
     const orders = await Order.find(filter)
       .populate({
         path: "deliveryBoy",
@@ -85,39 +84,40 @@ const viewPaymentByDeliveryBoy = async (req, res) => {
     const { deliveryBoyId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    const orders = await Order.find({ deliveryBoy: deliveryBoyId })
-      .populate({ path: "deliveryBoy", model: DeliveryBoy, select: "fullName" }) // ✅ Fetch Only Delivery Boy Name
-      .populate({ path: "user", model: User, select: "fullName" }) // ✅ Fetch Customer Name
-      .populate({
-        path: "items.product",
-        model: Product,
-        select: "productName",
-      })
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const orders = await Order.find({
+      deliveryBoy: deliveryBoyId,
+      outForDeliveryAt: {
+        $gte: today,
+        $lt: tomorrow,
+      },
+    })
+      .populate({ path: "deliveryBoy", model: DeliveryBoy, select: "fullName" })
+      .populate({ path: "user", model: User, select: "fullName" })
+      .populate({ path: "items.product", model: Product, select: "productName" })
       .sort({ orderDate: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
     if (!orders.length) {
-      return res
-        .status(404)
-        .json({
-          message: "No payment history found for the selected delivery boy.",
-        });
+      return res.status(404).json({
+        message: "No payment history found for the selected delivery boy today.",
+      });
     }
 
-    const grandTotal = orders.reduce(
-      (sum, order) => sum + order.totalAmount,
-      0
-    );
+    const grandTotal = orders.reduce((sum, order) => sum + order.totalAmount, 0);
 
-   return res.status(200).json({
+    return res.status(200).json({
       success: true,
       deliveryBoy: {
         _id: orders[0].deliveryBoy._id,
         fullName: orders[0].deliveryBoy.fullName,
-        Date: orders.some((order) => order.orderDate)
-          ? new Date(orders[0].orderDate).toLocaleDateString("en-GB")
-          : "Pending", // ✅ Assign delivery date
+        Date: new Date(orders[0].outForDeliveryAt).toLocaleDateString("en-GB"),
       },
       grandTotal,
       totalRecords: orders.length,
@@ -136,5 +136,7 @@ const viewPaymentByDeliveryBoy = async (req, res) => {
     res.status(500).json({ message: "Server error.", error: error.message });
   }
 };
+
+
 
 module.exports = { getPaymentHistory, viewPaymentByDeliveryBoy };
