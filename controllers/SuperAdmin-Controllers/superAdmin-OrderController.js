@@ -153,7 +153,7 @@ const getOrderById = async (req, res) => {
       .populate("user", "fullName phoneNumber email address")
       .populate(
         "items.product",
-        "image productCode brand productSubType productDescription size price"
+        "image productCode brand productName productSubType productDescription size price"
       )
       .populate("branchInfo");
 
@@ -220,6 +220,7 @@ const getOrderById = async (req, res) => {
 
       ProductCode: firstItem?.product?.productCode,
       ProductBrand: firstItem?.product?.brand,
+      ProductName: firstItem?.product?.productName,
       ProductSubType: firstItem?.product?.productSubType,
       ProductDescription: firstItem?.product?.productDescription,
       Size: firstItem?.product?.size,

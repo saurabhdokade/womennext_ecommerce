@@ -6,24 +6,20 @@ const mongoose = require("mongoose");
 //✅ Get All Customers
 const getAllCustomers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "", sortOrder = "" } = req.query;
-    const currentPage = Math.max(parseInt(page, 10), 1);
-    const pageLimit = Math.max(parseInt(limit, 10), 1);
+    let { page = 1, limit = 10, search = "", sortOrder = "asc" } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
 
     const branchId = req.branchAdmin?.branch;
     if (!branchId) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Unauthorized access to branch data.",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access to branch data.",
+      });
     }
 
     // Get service pin codes for the branch
-    const branchInfo = await branchModel
-      .findById(branchId)
-      .select("servicePinCode");
+    const branchInfo = await branchModel.findById(branchId).select("servicePinCode");
     const servicePincodes = branchInfo?.servicePinCode || [];
 
     // If no pincodes, no customer is served
@@ -31,10 +27,6 @@ const getAllCustomers = async (req, res) => {
       return res.status(200).json({
         success: true,
         totalCustomers: 0,
-        totalPages: 0,
-        currentPage,
-        previous: false,
-        next: false,
         customers: [],
       });
     }
@@ -60,23 +52,23 @@ const getAllCustomers = async (req, res) => {
 
     // Total customers count
     const totalCustomers = await userModel.countDocuments(query);
-    const totalPages = Math.ceil(totalCustomers / pageLimit);
-    const skip = (currentPage - 1) * pageLimit;
+    const totalPages = Math.ceil(totalCustomers / limit);
+    const skip = (page - 1) * limit;
 
     // Determine sorting
     const sort =
       sortOrder.toLowerCase() === "asc"
         ? { fullName: 1 }
         : sortOrder.toLowerCase() === "desc"
-          ? { fullName: -1 }
-          : { createdAt: -1 };
+        ? { fullName: -1 }
+        : { createdAt: -1 };
 
     // Aggregated customers list
     const customers = await userModel.aggregate([
       { $match: query },
-      { $sort: sort }, // <-- Sort *before* skip/limit
+      { $sort: sort },
       { $skip: skip },
-      { $limit: pageLimit },
+      { $limit: limit },
       {
         $project: {
           _id: 1,
@@ -103,18 +95,17 @@ const getAllCustomers = async (req, res) => {
       success: true,
       totalCustomers,
       totalPages,
-      currentPage,
-      previous: currentPage > 1,
-      next: currentPage < totalPages,
+      currentPage: page,
+      previous: page > 1,
+      next: page < totalPages,
       customers: formattedCustomers,
     });
   } catch (error) {
     console.error("Error in getAllCustomers:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 //✅ Get Customer by ID
 const getCustomerById = async (req, res) => {
