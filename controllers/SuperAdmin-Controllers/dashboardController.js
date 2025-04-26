@@ -142,20 +142,35 @@ const getAllOrdersCount = async (req, res) => {
 //✅getYearDropdownData
 const getYearDropdownData = async (req, res) => {
   try {
-    const years = [];
-    for (let year = 2000; year <= 2030; year++) {
-      years.push(year);
-    }
-    return res.status(201).json({ years });
-  } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({
-        message: "Internal Server Error",
+    const branch = await branchModel.find().select("createdAt");
+
+    if (!branch.length) {
+      return res.status(404).json({
         success: false,
-        error: error.message,
+        message: "No orders found",
       });
+    }
+
+    const yearsSet = new Set();
+    branch.forEach((order) => {
+      const year = new Date(order.createdAt).getFullYear();
+      yearsSet.add(year);
+    });
+
+    const years = Array.from(yearsSet).sort((a, b) => b - a); 
+
+    return res.status(200).json({
+      success: true,
+      years,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 
