@@ -14,6 +14,7 @@ const getAllOrders = async (req, res) => {
       search,
     } = req.query;
 
+    
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
     const sortOrderValue = sortOrder === "desc" ? -1 : 1;

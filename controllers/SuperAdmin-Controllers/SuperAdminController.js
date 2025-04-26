@@ -78,6 +78,9 @@ const login = async (req, res) => {
         message: "Login successful",
         token,
         id: admin._id,
+        fullName: admin.fullName,
+        email: admin.email,
+        profileImage: admin.profileImage,
         success: true,
       });
   } catch (error) {
