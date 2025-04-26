@@ -106,7 +106,7 @@ const getProductById = async (req, res) => {
 
         const product = await ProductModel.findById(id)
             .select(
-                "productName image brand size quantityInEachPack productCode productSubType productDescription"
+                "productName image brand  size quantityInEachPack productCode productSubType productDescription"
             )
             .lean();
 

@@ -128,7 +128,7 @@ const getOrderBranchDetails = async (req, res) => {
       .populate("user", "fullName phoneNumber email address")
       .populate(
         "items.product",
-        "image productCode brand productSubType productDescription size price"
+        "image productCode brand productName productSubType productDescription size price"
       )
       .populate("branchInfo");
  
