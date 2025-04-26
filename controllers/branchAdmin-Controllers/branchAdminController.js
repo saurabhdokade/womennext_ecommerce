@@ -74,7 +74,14 @@ const login = async (req, res) => {
 
     return res
       .status(200)
-      .json({ message: "Login successful", token, id: admin._id });
+      .json({ message: "Login successful",
+         token, 
+         id: admin._id,
+         fullName: admin.fullName,
+         email: admin.email,
+         profileImage: admin.profileImage,
+         success: true,
+         });
   } catch (error) {
     return res
       .status(500)
