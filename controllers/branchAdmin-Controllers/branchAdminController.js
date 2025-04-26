@@ -36,7 +36,7 @@ const register = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      msg: "Registration successful",
+      msg: "Branch Admin Registered successfully",
       data: newAdmin,
     });
   } catch (error) {
@@ -74,7 +74,7 @@ const login = async (req, res) => {
 
     return res
       .status(200)
-      .json({ message: "Login successful",
+      .json({ message: "Branch Admin Login successfully",
          token, 
          id: admin._id,
          fullName: admin.fullName,
@@ -171,28 +171,52 @@ const getBranchAdminProfile = async (req, res) => {
 const updateBranchAdminProfile = async (req, res) => {
   try {
     const { id } = req.params;
+    const { fullName, email, contactNumber, newPassword, confirmNewPassword } = req.body;
+ 
+    
+ 
+    // ✅ Fetch the Branch Admin
     const branchAdmin = await BranchAdmin.findById(id)
       .populate("branch", "branchName fullAddress")
       .select("fullName email password contactNumber profileImage branch");
+ 
     if (!branchAdmin) {
       return res.status(404).json({ message: "Branch Admin not found." });
     }
-    // Handle file upload for profileImage
-    const profileImage = req.file ? req.file.path : null;
-    if (profileImage) branchAdmin.profileImage = profileImage;
-    if (req.body.fullName) branchAdmin.fullName = req.body.fullName;
-    if (req.body.email) branchAdmin.email = req.body.email;
-    if (req.body.contactNumber)
-      branchAdmin.contactNumber = req.body.contactNumber;
-
+ 
+    // ✅ Handle Profile Updates (Using Form-Data)
+    if (req.files && req.files.profileImage) {
+      branchAdmin.profileImage = req.files.profileImage[0].path; // ✅ Extract from Multer File Upload
+    }
+    if (fullName) branchAdmin.fullName = fullName;
+    if (email) branchAdmin.email = email;
+    if (contactNumber) branchAdmin.contactNumber = contactNumber;
+ 
+    // ✅ Handle Password Update (Delegating Hashing to Mongoose Middleware)
+    if (newPassword && confirmNewPassword) {
+      if (typeof newPassword !== "string" || typeof confirmNewPassword !== "string") {
+        return res.status(400).json({ message: "Invalid password format." });
+      }
+ 
+      if (newPassword.trim() !== confirmNewPassword.trim()) {
+        return res.status(400).json({ message: "New passwords do not match." });
+      }
+ 
+      // ✅ Assign New Password (Hashing will be handled by Mongoose `pre-save` middleware)
+      branchAdmin.password = newPassword.trim();
+    }
+ 
+    // ✅ Save Updated Profile
     await branchAdmin.save();
+ 
     res.status(200).json({
+      success: true,
       message: "Branch Admin profile updated successfully.",
       branchAdmin: {
         fullName: branchAdmin.fullName,
         email: branchAdmin.email,
         contactNumber: branchAdmin.contactNumber,
-        profileImage: branchAdmin.profileImage,
+        profileImage: branchAdmin.profileImage, // ✅ Ensure Updated Image is Reflected
         branch: {
           branchName: branchAdmin.branch.branchName,
           fullAddress: branchAdmin.branch.fullAddress,
@@ -200,12 +224,14 @@ const updateBranchAdminProfile = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Branch Admin Update Profile Error:", error); // ✅ Debugging Logs
     res.status(500).json({
       message: "Server error.",
       error: error.message,
     });
   }
 };
+ 
 
 //✅ Reset Password
 const resetPassword = async (req, res) => {
@@ -239,49 +265,13 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// ✅ Change Password At Profile (Without Current Password)
-const changeAdminPasswordAtProfile = async (req, res) => {
-  try {
-    const { id } = req.params; // Admin ID from the route parameter
-    const { newPassword, confirmNewPassword } = req.body;
- 
-    // Validate required fields
-    if (!newPassword || !confirmNewPassword) {
-      return res.status(400).json({ message: "Both new password and confirm password are required." });
-    }
- 
-    // Ensure new password and confirm password match
-    if (newPassword !== confirmNewPassword) {
-      return res.status(400).json({ message: "Passwords do not match." });
-    }
- 
-    // Find the admin by ID
-    const admin = await SuperAdmin.findById(id);
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found." });
-    }
- 
-    // Update password (hashed automatically via pre-save middleware)
-    admin.password = newPassword;
-    await admin.save();
- 
-    res.status(200).json({
-      success: true,
-      message: "Password changed successfully.",
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error.",
-      error: error.message,
-    });
-  }
-};
+
 
 //✅ Logout Branch Admin
 const logout = async (req, res) => {
   try {
     res.clearCookie("token");
-    res.json({ message: "Logout successful." });
+    res.json({ message: "Branch Admin Logout Successfully." });
   } catch (error) {
     res.status(500).json({ message: "Server error.", error: error.message });
   }
@@ -294,7 +284,6 @@ module.exports = {
   forgotPassword,
   verifyOtp,
   updateBranchAdminProfile,
-  changeAdminPasswordAtProfile,
   resetPassword,
   logout,
 };

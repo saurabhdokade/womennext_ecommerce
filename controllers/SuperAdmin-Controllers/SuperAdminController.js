@@ -34,7 +34,7 @@ const register = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      msg: "Registration successful",
+      msg: "SuperAdmin Registered successfully",
       data: newAdmin,
     });
   } catch (error) {
@@ -75,7 +75,7 @@ const login = async (req, res) => {
     return res
       .status(200)
       .json({
-        message: "Login successful",
+        message: "SuperAdmin Login successfully",
         token,
         id: admin._id,
         fullName: admin.fullName,
@@ -160,6 +160,7 @@ const getAdminProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: "SuperAdmin profile fetched successfully.",
       profile: admin,
     });
   } catch (error) {
@@ -173,10 +174,10 @@ const getAdminProfile = async (req, res) => {
 //✅ Update Admin
 const updateAdminProfile = async (req, res) => {
   try {
-    const { id } = req.params; // Get the user ID from request parameters
-    const { fullName, email, password } = req.body;
-    const { profileImage } = req.files;
-    // Find the user by ID
+    const { id } = req.params; // Get the admin ID from request parameters
+    const { fullName, email, newPassword, confirmNewPassword } = req.body;
+ 
+    // ✅ Fetch the Admin
     const admin = await SuperAdmin.findById(id);
     if (!admin) {
       return res.status(404).json({
@@ -184,30 +185,45 @@ const updateAdminProfile = async (req, res) => {
         message: "Admin not found",
       });
     }
-
-    // Update admin details if provided
+ 
+    // ✅ Handle Profile Updates (Using Form-Data)
+    if (req.files && req.files.profileImage) {
+      admin.profileImage = req.files.profileImage[0].path; // ✅ Extract from Multer File Upload
+    }
     if (fullName) admin.fullName = fullName;
     if (email) admin.email = email;
-
-    // If password is provided, hash it and update
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      admin.password = hashedPassword;
+ 
+    // ✅ Handle Password Update (Delegating Hashing to Mongoose Middleware)
+    if (newPassword && confirmNewPassword) {
+      if (typeof newPassword !== "string" || typeof confirmNewPassword !== "string") {
+        return res.status(400).json({ message: "Invalid password format." });
+      }
+ 
+      if (newPassword.trim() !== confirmNewPassword.trim()) {
+        return res.status(400).json({ message: "New passwords do not match." });
+      }
+ 
+      // ✅ Assign New Password (Hashing will be handled by Mongoose `pre-save` middleware)
+      admin.password = newPassword.trim();
     }
-    if (profileImage) {
-      admin.profileImage = profileImage[0].path;
-    }
+ 
+    // ✅ Save Updated Profile
     await admin.save();
-
+ 
     return res.status(200).json({
       success: true,
-      admin: admin,
-      message: "Admin details updated successfully",
+      message: "SuperAdmin profile updated successfully.",
+      admin: {
+        fullName: admin.fullName,
+        email: admin.email,
+        profileImage: admin.profileImage, // ✅ Ensure Updated Image is Reflected
+      },
     });
   } catch (error) {
+    console.error("Super AdminUpdate Profile Error:", error); // ✅ Debugging Logs
     return res.status(500).json({
       success: false,
-      message: "Error updating user",
+      message: "Error updating admin profile",
       error: error.message,
     });
   }
@@ -251,49 +267,13 @@ const resetPassword = async (req, res) => {
   }
 };
 
-//✅ Change Password At Profile
-const changeAdminPasswordAtProfile = async (req, res) => {
-  try {
-    const { id } = req.params; // Admin ID from the route parameter
-    const { newPassword, confirmNewPassword } = req.body;
- 
-    // Validate required fields
-    if (!newPassword || !confirmNewPassword) {
-      return res.status(400).json({ message: "Both new password and confirm password are required." });
-    }
- 
-    // Ensure new password and confirm password match
-    if (newPassword !== confirmNewPassword) {
-      return res.status(400).json({ message: "Passwords do not match." });
-    }
- 
-    // Find the admin by ID
-    const admin = await SuperAdmin.findById(id);
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found." });
-    }
- 
-    // Update password (hashed automatically via pre-save middleware)
-    admin.password = newPassword;
-    await admin.save();
- 
-    res.status(200).json({
-      success: true,
-      message: "Password changed successfully.",
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error.",
-      error: error.message,
-    });
-  }
-};
+
 //✅ logout Admin
 const logout = async (req, res) => {
   try {
     // Clear the token cookie
     res.clearCookie("token"); // Ensure the cookie is cleared
-    return res.json({ message: "Logout successful." });
+    return res.json({ message: "superAdmin Logout Successfully." });
   } catch (error) {
     console.error("Error during logout:", error);
     return res.status(500).json({ message: "Server Error." });
@@ -308,6 +288,5 @@ module.exports = {
   updateAdminProfile,
   verifyOtp,
   resetPassword,
-  changeAdminPasswordAtProfile,
   logout,
 };
