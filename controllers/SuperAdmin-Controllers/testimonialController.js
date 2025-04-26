@@ -11,7 +11,7 @@ const createTestimonial = async (req, res) => {
         message: "Image is required.",
       });
     }
-    const image = req.file.path; 
+    const image = req.file.path;
     // console.log("string:",image);
 
     const newTestimonial = await Testimonial.create({
@@ -39,40 +39,43 @@ const createTestimonial = async (req, res) => {
 //✅ Get all testimonials
 const getAllTestimonials = async (req, res) => {
   try {
-    let { page=1, limit=10, search, sortBy, sortOrder } = req.query;
+    let { page = 1, limit = 10, search, sortOrder = "asc" } = req.query;
 
     page = parseInt(page);
     limit = parseInt(limit);
     const skip = (page - 1) * limit;
+    const sortDirection = sortOrder === "desc" ? -1 : 1;
 
-    //Implemented Sort
-    sortBy = sortBy || "name"; // Default sorting by name
-    sortOrder = sortOrder === "desc" ? -1 : 1;
-
-    let query = {};
-    if (search) {
-      query = {
+    // Build search query
+    const query = search
+      ? {
         $or: [
           { name: { $regex: search, $options: "i" } },
-          { subtitle: { $regex: search, $options: "i" } },
           { feedback: { $regex: search, $options: "i" } },
         ],
-      };
-    }
+      }
+      : {};
 
-    const testimonials = await Testimonial.find(query)
-      .sort({ [sortBy]: sortOrder })
-      .skip(skip)
-      .limit(limit);
+    // Fetch filtered & paginated testimonials
+    const [testimonials, totalCount] = await Promise.all([
+      Testimonial.find(query)
+        .sort({ name: sortDirection })
+        .skip(skip)
+        .limit(limit)
+        .select("image name feedback"),
+      Testimonial.countDocuments(query),
+    ]);
 
-    const totalCount = await Testimonial.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
 
     res.status(200).json({
       success: true,
-      data: testimonials,
+      totalTestimonials: totalCount,
+      totalPages,
       currentPage: page,
-      totalPages: Math.ceil(totalCount / limit),
-      totalItems: totalCount,
+      previous: page > 1,
+      next: page < totalPages,
+      testimonials,
     });
   } catch (error) {
     res.status(500).json({
