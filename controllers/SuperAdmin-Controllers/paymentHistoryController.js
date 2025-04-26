@@ -60,6 +60,7 @@ const getPaymentHistory = async (req, res) => {
         order.items.length > 0 && order.items[0].product?.productName
           ? order.items[0].product.productName
           : "N/A",
+      paymentMethod: order.paymentMethod,
       deliveryBoyName: order.deliveryBoy?.fullName || "N/A",
       status: order.deliveryStatus ? "Paid" : "Not Paid",
     }));
@@ -78,65 +79,51 @@ const getPaymentHistory = async (req, res) => {
   }
 };
 
+
 // ✅ View Payment History for a Specific Delivery Boy (Using Orders)
 const viewPaymentByDeliveryBoy = async (req, res) => {
   try {
     const { deliveryBoyId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const orders = await Order.find({
-      deliveryBoy: deliveryBoyId,
-      outForDeliveryAt: {
-        $gte: today,
-        $lt: tomorrow,
-      },
-    })
-      .populate({ path: "deliveryBoy", model: DeliveryBoy, select: "fullName" })
-      .populate({ path: "user", model: User, select: "fullName" })
+    const orders = await Order.find({ deliveryBoy: deliveryBoyId })
+      .populate({ path: "deliveryBoy", model: DeliveryBoy, select: "fullName" }) // ✅ Fetch Only Delivery Boy Name
+      .populate({ path: "user", model: User, select: "fullName" }) // ✅ Fetch Customer Name
       .populate({ path: "items.product", model: Product, select: "productName" })
       .sort({ orderDate: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
     if (!orders.length) {
-      return res.status(404).json({
-        message: "No payment history found for the selected delivery boy today.",
-      });
+      return res.status(404).json({ message: "No payment history found for the selected delivery boy." });
     }
 
     const grandTotal = orders.reduce((sum, order) => sum + order.totalAmount, 0);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       deliveryBoy: {
         _id: orders[0].deliveryBoy._id,
         fullName: orders[0].deliveryBoy.fullName,
-        Date: new Date(orders[0].outForDeliveryAt).toLocaleDateString("en-GB"),
+        Date: orders.some(order => order.outForDeliveryAt) 
+          ? new Date(orders[0].outForDeliveryAt).toLocaleDateString("en-GB") 
+          : "Pending" // ✅ Assign delivery date
       },
       grandTotal,
       totalRecords: orders.length,
       paymentHistory: orders.map((order, index) => ({
         _id: order._id,
-        productName:
-          order.items.length > 0 && order.items[0].product?.productName
-            ? order.items[0].product.productName
-            : "N/A",
+        paymentMethod: order.paymentMethod,
+        productName: order.items.length > 0 && order.items[0].product?.productName ? order.items[0].product.productName : "N/A",
         customerName: order.user?.fullName || "N/A",
         totalAmount: order.totalAmount,
-        status: order.deliveryStatus || "Not Given By Delivery Boy Yet",
-      })),
+        status: order.deliveryStatus ||"Not Given By Delivery Boy Yet"
+      }))
     });
   } catch (error) {
     res.status(500).json({ message: "Server error.", error: error.message });
   }
 };
-
 
 
 module.exports = { getPaymentHistory, viewPaymentByDeliveryBoy };
