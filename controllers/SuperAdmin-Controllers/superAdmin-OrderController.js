@@ -1,90 +1,130 @@
 const Order = require("../../models/UserModels/orderNow");
 const branchModel = require("../../models/SuperAdminModels/branch");
+const{EmergencyFeeModel}=require("../../models/SuperAdminModels/Settings");
+
 
 //✅getAllOrders
 const getAllOrders = async (req, res) => {
   try {
-    const {
-      query,
+    let {
       page = 1,
       limit = 10,
-      sortBy = "createdAt",
       sortOrder = "desc",
+      branchName,
+      search,
     } = req.query;
+
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
     const sortOrderValue = sortOrder === "desc" ? -1 : 1;
-    const sortOptions = { [sortBy]: sortOrderValue };
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (page - 1) * limit;
 
-    let orders = await Order.find()
-      .sort(sortOptions)
-      .populate("user", "fullName phoneNumber email address")
-      .populate(
-        "items.product",
-        "name price brand productName productDescription productSubType size quantity productCode image"
-      );
+    const matchStage = {};
 
-    const allBranches = await branchModel.find();
+    const parseDate = (dateStr) => {
+      const [day, month, year] = dateStr.split("/").map((part) => parseInt(part, 10));
+      return new Date(year, month - 1, day);
+    };
 
-    const enrichedOrders = await Promise.all(
-      orders.map(async (order) => {
-        const userAddress = order.user?.address || "";
-        const matchedBranch = allBranches.find((branch) => {
-          const servicePin = branch.servicePinCode?.toString();
-          return (
-            userAddress.includes(servicePin) ||
-            branch.fullAddress.includes(userAddress)
-          );
-        });
+    if (search) {
+      const exactDate = parseDate(search);
+      const startOfDay = new Date(exactDate.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(exactDate.setHours(23, 59, 59, 999));
 
-        return {
-          ...order.toObject(),
-          branchInfo: matchedBranch || null,
-        };
-      })
-    );
-
-    let filteredOrders = enrichedOrders;
-
-    if (query && query.trim() !== "") {
-      const searchRegex = new RegExp(query.trim(), "i");
-      filteredOrders = enrichedOrders.filter((order) => {
-        return (
-          searchRegex.test(order.user?.fullName) ||
-          searchRegex.test(order.user?.email) ||
-          searchRegex.test(order.user?.phoneNumber?.toString()) ||
-          searchRegex.test(order.branchInfo?.branchName || "") ||
-          searchRegex.test(order.branchInfo?.phoneNumber?.toString() || "") ||
-          order.items?.some(
-            (item) =>
-              searchRegex.test(item.product?.name || "") ||
-              searchRegex.test(item.product?.brand || "") ||
-              searchRegex.test(item.product?.productName || "") ||
-              searchRegex.test(item.product?.productDescription || "")
-          )
-        );
-      });
+      matchStage["orderDate"] = {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      };
     }
 
-    const totalOrders = filteredOrders.length;
-    const totalPages = Math.ceil(totalOrders / parseInt(limit));
-    const paginatedOrders = filteredOrders.slice(skip, skip + parseInt(limit));
+    if (branchName) {
+      matchStage["branchInfo.branchName"] = {
+        $regex: new RegExp(branchName, "i"),
+      };
+    }
 
-    const simplifiedOrders = paginatedOrders.map((order) => ({
-      orderDate: order.orderDate,
-      orderId: order._id,
+    const aggregatePipeline = [
+      {
+        $lookup: {
+          from: "branches",
+          localField: "branchInfo",
+          foreignField: "_id",
+          as: "branchInfo",
+        },
+      },
+      { $unwind: "$branchInfo" },
+      { $sort: { createdAt: sortOrderValue } },
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $lookup: {
+          from: "products",
+          localField: "items.product",
+          foreignField: "_id",
+          as: "productsInfo",
+        },
+      },
+      {
+        $facet: {
+          metadata: [
+            { $count: "total" },
+            {
+              $addFields: {
+                page,
+                limit,
+              },
+            },
+          ],
+          data: [{ $skip: skip }, { $limit: limit }],
+        },
+      },
+    ];
+
+    const result = await Order.aggregate(aggregatePipeline);
+
+    const orders = result[0].data;
+    const metadata = result[0].metadata[0] || {
+      total: 0,
+      page,
+      limit,
+    };
+
+    const total = metadata.total;
+    const totalPages = Math.ceil(total / limit);
+    const hasPrevious = page > 1;
+    const hasNext = page < totalPages;
+
+    const formatDate = (date) => {
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    const simplifiedOrders = orders.map((order) => ({
+      orderDate: formatDate(new Date(order.orderDate)),
+      orderId: order.orderId,
       orderStatus: order.status || order.orderStatus,
+      // branchName: order.branchInfo?.branchName, // Uncomment if needed
     }));
 
     res.status(200).json({
       success: true,
       message: "Orders fetched successfully",
+      total,
+      totalPages,
+      currentPage: page,
+      previous: hasPrevious,
+      next: hasNext,
       data: simplifiedOrders,
-      pagination: {
-        total: totalOrders,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: totalPages,
-      },
     });
   } catch (error) {
     res.status(500).json({
@@ -95,10 +135,11 @@ const getAllOrders = async (req, res) => {
   }
 };
 
+
 //✅getOrderById
 const getOrderById = async (req, res) => {
   try {
-    const { id} = req.params;
+    const { id } = req.params;
 
     if (!id) {
       return res.status(400).json({
@@ -122,6 +163,13 @@ const getOrderById = async (req, res) => {
       });
     }
 
+    let emergencyFeeAmount = 0;
+    if (order.emergencyDelivery) {
+      const feeRecord = await EmergencyFeeModel.findOne().sort({ createdAt: -1 });
+      if (feeRecord) {
+        emergencyFeeAmount = feeRecord.feeAmount;
+      }
+    }
     let matchedBranch = null;
 
     if (order.branchInfo) {
@@ -178,7 +226,7 @@ const getOrderById = async (req, res) => {
       Price: firstItem?.product?.price,
       OrderStatus: order.status,
       PaymentMode: order.paymentMethod,
-      DeliveryType: order.emergencyDelivery ? "Emergency (₹40 Extra)" : "Normal Delivery",
+      DeliveryType: order.emergencyDelivery ? `Emergency( ₹${emergencyFeeAmount} Extra) `: "Normal Delivery",
       GrandTotal: order.totalAmount,
 
       ...(order.status === "Cancelled" && {

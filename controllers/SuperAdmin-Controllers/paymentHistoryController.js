@@ -10,38 +10,45 @@ const getPaymentHistory = async (req, res) => {
 
     const filter = {};
 
-    // ✅ Validate & Convert Date Properly
+    // ✅ Parse and validate date
     if (date) {
       const parsedDate = new Date(date);
       if (!isNaN(parsedDate.getTime())) {
-        filter.orderDate = { $gte: parsedDate, $lte: new Date(parsedDate).setHours(23, 59, 59, 999) };
+        const startOfDay = new Date(parsedDate.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(parsedDate.setHours(23, 59, 59, 999));
+        filter.orderDate = { $gte: startOfDay, $lte: endOfDay };
       } else {
         return res.status(400).json({ message: "Invalid date format. Please provide a valid date." });
       }
     }
 
-    if (paymentMethod) filter.paymentMethod = paymentMethod; // ✅ Filter by Cash/Online payments
-
+    if (paymentMethod) filter.paymentMethod = paymentMethod;
 
     const orders = await Order.find(filter)
-      .populate({ path: "deliveryBoy", model: DeliveryBoy, select: "fullName" }) // ✅ Fetch Only Delivery Boy Name
+      .populate({
+        path: "deliveryBoy",
+        model: "DeliveryBoy", // ✅ Must match model registration name
+        select: "fullName",   // ✅ Only fetch the fullName field
+      })
       .populate({
         path: "items.product",
-        model: Product,
-        select: "productName", // ✅ Fetch Only Product Name
+        model: "Products",
+        select: "productName",
       })
       .sort({ orderDate: -1 })
-      .skip((page - 1) * limit)
+      .skip((parseInt(page) - 1) * parseInt(limit))
       .limit(parseInt(limit));
 
     const totalRecords = await Order.countDocuments(filter);
 
-    // ✅ Extract Only Required Fields
-    const paymentHistory = orders.map((order, index) => ({
+    const paymentHistory = orders.map((order) => ({
       _id: order._id,
       date: new Date(order.orderDate).toLocaleDateString("en-GB"),
-      productName: order.items.length > 0 && order.items[0].product?.productName ? order.items[0].product.productName : "N/A", // ✅ Ensure proper product name extraction
-      deliveryBoyName: order.deliveryBoy?.fullName || "Not Assigned",
+      productName:
+        order.items.length > 0 && order.items[0].product?.productName
+          ? order.items[0].product.productName
+          : "N/A",
+      deliveryBoyName: order.deliveryBoy?.fullName || "N/A",
       status: order.paymentMode ? "Paid" : "Not Paid",
     }));
 
@@ -50,12 +57,13 @@ const getPaymentHistory = async (req, res) => {
       totalRecords,
       currentPage: parseInt(page),
       totalPages: Math.ceil(totalRecords / limit),
-      paymentHistory, // ✅ Returns only selected fields
+      paymentHistory,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error.", error: error.message });
   }
 };
+
 
 // ✅ View Payment History for a Specific Delivery Boy (Using Orders)
 const viewPaymentByDeliveryBoy = async (req, res) => {
