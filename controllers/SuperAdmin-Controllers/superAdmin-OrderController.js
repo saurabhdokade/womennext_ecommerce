@@ -112,6 +112,7 @@ const getAllOrders = async (req, res) => {
 
     const simplifiedOrders = orders.map((order) => ({
       orderDate: formatDate(new Date(order.orderDate)),
+      id: order._id,
       orderId: order.orderId,
       orderStatus: order.status || order.orderStatus,
       // branchName: order.branchInfo?.branchName, // Uncomment if needed
