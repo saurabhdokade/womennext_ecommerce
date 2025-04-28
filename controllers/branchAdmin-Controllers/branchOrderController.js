@@ -11,47 +11,47 @@ const getAllBranchOrders = async (req, res) => {
       page = 1,
       limit = 10,
       sortBy = "createdAt",
-      sortOrder = "asc",
+      sortOrder = "desc",
+      status = "",         
+      date = "",           
     } = req.query;
- 
+
+    const branchId = req.branchAdmin.branch; 
+
     const sortOrderValue = sortOrder === "desc" ? -1 : 1;
     const sortOptions = { [sortBy]: sortOrderValue };
     const skip = (parseInt(page) - 1) * parseInt(limit);
- 
-    // Fetch filtered & paginated orders first
-    let orders = await Order.find()
+
+    let filter = { branchInfo: branchId };
+
+    if (status.trim()) {
+      filter.status = status;
+    }
+
+    if (date.trim()) {
+      const selectedDate = new Date(date);
+      const nextDate = new Date(selectedDate);
+      nextDate.setDate(nextDate.getDate() + 1);
+
+      filter.createdAt = {
+        $gte: selectedDate,
+        $lt: nextDate,
+      };
+    }
+
+    let orders = await Order.find(filter)
       .sort(sortOptions)
       .skip(skip)
       .limit(parseInt(limit))
       .populate("user", "fullName phoneNumber email address")
-      .populate("items.product", "productName image");
- 
-    const allBranches = await branchModel.find();
- 
-    // Enrich with branch info
-    const enrichedOrders = await Promise.all(
-      orders.map(async (order) => {
-        const userAddress = order.user?.address || "";
-        const matchedBranch = allBranches.find((branch) => {
-          const servicePin = branch.servicePinCode?.toString();
-          return (
-            userAddress.includes(servicePin) ||
-            branch.fullAddress.includes(userAddress)
-          );
-        });
- 
-        return {
-          ...order.toObject(),
-          branchInfo: matchedBranch || null,
-        };
-      })
-    );
- 
-    // Filter using search query (if any)
-    let filteredOrders = enrichedOrders;
+      .populate("items.product", "productName image")
+      .populate("branchInfo", "branchName");
+
+    // Search Filter
+    let filteredOrders = orders;
     if (query.trim() !== "") {
       const searchRegex = new RegExp(query.trim(), "i");
-      filteredOrders = enrichedOrders.filter((order) => {
+      filteredOrders = orders.filter((order) => {
         return (
           searchRegex.test(order.user?.fullName) ||
           searchRegex.test(order.user?.email) ||
@@ -64,15 +64,14 @@ const getAllBranchOrders = async (req, res) => {
         );
       });
     }
- 
+
     const totalOrders = filteredOrders.length;
     const totalPages = Math.ceil(totalOrders / parseInt(limit));
     const hasPrevious = parseInt(page) > 1;
     const hasNext = parseInt(page) < totalPages;
- 
-    // Final slice for paginated response after filtering
+
     const paginatedOrders = filteredOrders.slice(0, parseInt(limit));
- 
+
     const simplifiedOrders = paginatedOrders.map((order) => ({
       id: order._id,
       orderId: order.orderId,
@@ -86,19 +85,18 @@ const getAllBranchOrders = async (req, res) => {
         name: item.product?.productName,
         image: item.product?.image?.[0] || null,
       })),
-      orderStatus: order.status || order.orderStatus,
-      branchName: order.branchInfo?.branchName || null,
+      orderStatus: order.status,
+      branchName: order.branchInfo?.branchName || null, 
     }));
- 
+
     res.status(200).json({
       success: true,
-      message: "All Orders fetched successfully",
+      message: "Orders fetched successfully",
       totalOrders,
       totalPages,
       currentPage: parseInt(page),
       hasPrevious,
       hasNext,
-      // count: simplifiedOrders.length,
       data: simplifiedOrders,
     });
   } catch (error) {

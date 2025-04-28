@@ -20,6 +20,15 @@ const addBanner = async (req, res) => {
       });
     }
 
+    // 🛑 Check if already 5 banners exist
+    const bannerCount = await Banner.countDocuments();
+    if (bannerCount >= 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Maximum 5 banners are allowed. Cannot add more banners.",
+      });
+    }
+
     const image = req.file.path; // ✅ Store single image path
 
     // 🔢 Generate next Banner No.
@@ -56,6 +65,7 @@ const addBanner = async (req, res) => {
     });
   }
 };
+
 
 
 //✅ Get all banners
