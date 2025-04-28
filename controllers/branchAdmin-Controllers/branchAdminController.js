@@ -172,18 +172,16 @@ const updateBranchAdminProfile = async (req, res) => {
   try {
     const { id } = req.params;
     const { fullName, email, contactNumber, newPassword, confirmNewPassword } = req.body;
- 
-    
- 
-    // ✅ Fetch the Branch Admin
+
+    // ✅ Fetch the Branch Admin with Proper Population
     const branchAdmin = await BranchAdmin.findById(id)
-      .populate("branch", "branchName fullAddress")
+      .populate("branch", "branchName fullAddress") // ✅ Ensure branch info is fetched
       .select("fullName email password contactNumber profileImage branch");
- 
+
     if (!branchAdmin) {
       return res.status(404).json({ message: "Branch Admin not found." });
     }
- 
+
     // ✅ Handle Profile Updates (Using Form-Data)
     if (req.files && req.files.profileImage) {
       branchAdmin.profileImage = req.files.profileImage[0].path; // ✅ Extract from Multer File Upload
@@ -191,24 +189,24 @@ const updateBranchAdminProfile = async (req, res) => {
     if (fullName) branchAdmin.fullName = fullName;
     if (email) branchAdmin.email = email;
     if (contactNumber) branchAdmin.contactNumber = contactNumber;
- 
+
     // ✅ Handle Password Update (Delegating Hashing to Mongoose Middleware)
     if (newPassword && confirmNewPassword) {
       if (typeof newPassword !== "string" || typeof confirmNewPassword !== "string") {
         return res.status(400).json({ message: "Invalid password format." });
       }
- 
+
       if (newPassword.trim() !== confirmNewPassword.trim()) {
         return res.status(400).json({ message: "New passwords do not match." });
       }
- 
-      // ✅ Assign New Password (Hashing will be handled by Mongoose `pre-save` middleware)
+
+      // ✅ Assign New Password (Hashing will be handled by Mongoose pre-save middleware)
       branchAdmin.password = newPassword.trim();
     }
- 
+
     // ✅ Save Updated Profile
     await branchAdmin.save();
- 
+
     res.status(200).json({
       success: true,
       message: "Branch Admin profile updated successfully.",
@@ -216,11 +214,13 @@ const updateBranchAdminProfile = async (req, res) => {
         fullName: branchAdmin.fullName,
         email: branchAdmin.email,
         contactNumber: branchAdmin.contactNumber,
-        profileImage: branchAdmin.profileImage, // ✅ Ensure Updated Image is Reflected
-        branch: {
-          branchName: branchAdmin.branch.branchName,
-          fullAddress: branchAdmin.branch.fullAddress,
-        },
+        profileImage: branchAdmin.profileImage,
+        branch: branchAdmin.branch
+          ? {
+              branchName: branchAdmin.branch.branchName,
+              fullAddress: branchAdmin.branch.fullAddress,
+            }
+          : null, // ✅ Prevents TypeError when branch is null
       },
     });
   } catch (error) {

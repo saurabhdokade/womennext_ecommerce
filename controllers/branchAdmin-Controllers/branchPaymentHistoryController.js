@@ -82,7 +82,6 @@ const getPaymentHistory = async (req, res) => {
 
 
 // ✅ View Payment History for a Specific Delivery Boy (Using Orders)
-
 const viewPaymentByDeliveryBoy = async (req, res) => {
   try {
     const { deliveryBoyId } = req.params;
