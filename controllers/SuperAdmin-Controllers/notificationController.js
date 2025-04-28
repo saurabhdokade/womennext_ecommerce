@@ -111,7 +111,7 @@ const getSuperAdminReadNotification = async(req, res)=>{
   try {
     const notifications = await superAdminNotificationModel.find({
       isRead: true
-    });
+    }).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, notifications });
   } catch (error) {
     console.log(error)
@@ -124,7 +124,7 @@ const getSuperAdminUnreadNotification = async(req, res)=>{
   try {
     const notifications = await superAdminNotificationModel.find({
       isRead: false
-    });
+    }).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, notifications });
   } catch (error) {
     console.log(error)
