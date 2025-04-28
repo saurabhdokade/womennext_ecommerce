@@ -103,7 +103,7 @@ const viewPaymentByDeliveryBoy = async (req, res) => {
     res.status(200).json({
       success: true,
       deliveryBoy: {
-        _id: orders[0].deliveryBoy._id,
+        deliveryBoyId: orders[0].deliveryBoy._id,
         fullName: orders[0].deliveryBoy.fullName,
         Date: orders.some(order => order.outForDeliveryAt) 
           ? new Date(orders[0].outForDeliveryAt).toLocaleDateString("en-GB") 
