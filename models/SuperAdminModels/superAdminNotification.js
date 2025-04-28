@@ -10,7 +10,7 @@ const superAdminNotificationSchema = new Schema(
             type: String,
             required: true,
         },
-  
+
         isRead: {
             type: Boolean,
             default: false,

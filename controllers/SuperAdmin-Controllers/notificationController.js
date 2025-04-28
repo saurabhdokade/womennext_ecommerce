@@ -5,13 +5,7 @@ const DeliveryBoyModel = require("../../models/SuperAdminModels/DeliveryBoy");
 const superAdminNotificationModel = require("../../models/SuperAdminModels/superAdminNotification");
 const userModel = require("../../models/UserModels/User");
 const userNotificationModel = require("../../models/UserModels/userNotification");
-const {
-  getUnreadNotificationCount,
-  fetchNotifications,
-  updateNotificationStatus,
-  updateAllNotificationsStatus,
-  sendStockNotificationToSuperAdmin,
-} = require("../../utils/notifications");
+
 
 //✅ Get Users Type Dropdown
 const getUsersTypeDropdown = (req, res) => {
@@ -86,20 +80,93 @@ const addNotification = async (req, res) => {
   }
 };
 
-const createNotificationForSuperAdmin = async(req, res)=>{
-    try {
-        
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({
-            success: false,
-            message: "Error creating notification for super admin"
-        })
+//create Notification
+const createNotification = async (req, res) => {
+  try {
+    const { title, message } = req.body;
+
+    // Validate request data
+    if (!title || !message) {
+      return res.status(400).json({ success: false, message: "Title and message are required." });
     }
-}
+
+    // Create notification document
+    const notification = new superAdminNotificationModel({
+      title,
+      message,
+    });
+
+    // Save notification to the database
+    await notification.save();
+    return res.status(201).json({ success: true, message: "Notification created successfully." });
+  } catch (error) {
+    console.error("Error creating notification:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+//✅ Get SuperAdmin Read Notifications
+const getSuperAdminReadNotification = async(req, res)=>{
+  try {
+    const notifications = await superAdminNotificationModel.find({
+      isRead: true
+    });
+    return res.status(200).json({ success: true, notifications });
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+//✅ Get SuperAdmin Unread Notifications
+const getSuperAdminUnreadNotification = async(req, res)=>{
+  try {
+    const notifications = await superAdminNotificationModel.find({
+      isRead: false
+    });
+    return res.status(200).json({ success: true, notifications });
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+//✅ Update SuperAdmin Status of Unread Notification
+const updateSuperAdminStatusOfUnreadNotification = async (req, res) => {
+  try {
+      const { id } = req.params;
+      const result = await superAdminNotificationModel.updateOne(
+          { _id: id },
+          { $set: { isRead: true } }
+      );
+
+      if (result.modifiedCount === 0) {
+          return res.status(404).json({
+              success: false,
+              message: "Notification not found or already marked as read",
+          });
+      }
+
+      res
+          .status(200)
+          .json({ success: true, message: "Status updated successfully!" });
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+
+
 
 module.exports = {
   getUsersTypeDropdown,
   addNotification,
-
+  createNotification,
+  getSuperAdminReadNotification,
+  getSuperAdminUnreadNotification,
+  updateSuperAdminStatusOfUnreadNotification
 };
