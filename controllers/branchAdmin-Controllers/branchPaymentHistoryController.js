@@ -32,6 +32,7 @@ const getPaymentHistory = async (req, res) => {
     if (paymentMethod) {
       filter.paymentMethod = paymentMethod;
     }
+
     const orders = await Order.find(filter)
       .populate({
         path: "deliveryBoy",
@@ -47,7 +48,6 @@ const getPaymentHistory = async (req, res) => {
       .skip((parseInt(page) - 1) * parseInt(limit))
       .limit(parseInt(limit));
 
-    // console.log(orders)
     const totalRecords = await Order.countDocuments(filter);
 
     const totalPages = Math.ceil(totalRecords / limit);
@@ -63,7 +63,7 @@ const getPaymentHistory = async (req, res) => {
           : "N/A",
       paymentMethod: order.paymentMethod,
       deliveryBoyName: order.deliveryBoy?.fullName || "N/A",
-      deliveryBoyId:orders[0].deliveryBoy._id,
+      deliveryBoyId: order.deliveryBoy ? order.deliveryBoy._id : "N/A", // Updated this line to handle null case
       status: order.deliveryStatus ? "Paid" : "Not Paid",
     }));
 
