@@ -62,6 +62,7 @@ const getPaymentHistory = async (req, res) => {
           : "N/A",
       paymentMethod: order.paymentMethod,
       deliveryBoyName: order.deliveryBoy?.fullName || "N/A",
+      deliveryBoyId:orders[0].deliveryBoy._id,
       status: order.deliveryStatus ? "Paid" : "Not Paid",
     }));
 
