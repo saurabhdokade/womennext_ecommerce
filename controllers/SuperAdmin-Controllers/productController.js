@@ -2,6 +2,7 @@ const ProductModel = require("../../models/SuperAdminModels/Product");
 const BranchModel = require("../../models/SuperAdminModels/branch");
 const BranchAdminProductModel = require("../../models/BranchAdminModels/branchAdminProducts");
 const mongoose = require("mongoose");
+const superAdminNotificationModel = require("../../models/SuperAdminModels/superAdminNotification");
 
 const capitalizeWords = (str) => {
   return str
@@ -482,7 +483,7 @@ const assignToBranch = async (req, res) => {
 
     // Fetch product
     const product = await ProductModel.findById(productId).select(
-      "availableProductQuantity"
+      "productName availableProductQuantity"
     );
     if (!product) {
       return res.status(404).json({
@@ -517,6 +518,14 @@ const assignToBranch = async (req, res) => {
     // Update main product inventory
     product.availableProductQuantity -= totalQuantityToAdd;
     await product.save();
+
+    // ===== CHECK IF STOCK DROPPED BELOW 50 =====
+    if (product.availableProductQuantity < 50) {
+      await superAdminNotificationModel.create({
+        title: "Low Stock Alert",
+        message: `Product ${product.productName} stock is low. Only ${product.availableProductQuantity} unit(s) left.`,
+      });
+    }
 
     return res.status(200).json({
       success: true,
