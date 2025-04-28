@@ -127,4 +127,19 @@ const viewPaymentByDeliveryBoy = async (req, res) => {
   }
 };
 
-module.exports = { getPaymentHistory, viewPaymentByDeliveryBoy };
+//✅ Dropdown Api For Payment Status
+const getPaymentStatus = async (req, res) => {
+  try {
+    const paymentMethods = await Order.distinct("paymentMethod");
+    return res.status(200).json({ paymentMethods });
+  } catch (error) {
+    console.error("Error fetching payment methods:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching payment methods",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { getPaymentHistory, viewPaymentByDeliveryBoy, getPaymentStatus };
