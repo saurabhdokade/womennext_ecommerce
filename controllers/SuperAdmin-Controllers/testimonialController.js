@@ -116,11 +116,7 @@ const updateTestimonial = async (req, res) => {
   try {
     const { name, subtitle, feedback, status } = req.body;
 
-    let imagePaths = [];
-
-    if (req.files && req.files.length > 0) {
-      imagePaths = req.files.map((file) => file.path);
-    }
+    const image = req.file.path;
 
     // Fetch existing testimonial
     const existingTestimonial = await Testimonial.findById(req.params.id);
@@ -136,7 +132,7 @@ const updateTestimonial = async (req, res) => {
       {
         name,
         subtitle,
-        image: imagePaths.length > 0 ? imagePaths : existingTestimonial.image,
+        image,
         feedback,
         status,
       },
