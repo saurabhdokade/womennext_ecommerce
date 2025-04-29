@@ -1,7 +1,9 @@
 const Banner = require("../../models/SuperAdminModels/banner");
 
+
+//✅ Get Single Banner using banner number
 const getSingleBanner = async (req, res) => {
-    const bannerIndex = Number(req.params.number);
+    const bannerIndex = Number(req.query.number);
 
     if (!Number.isInteger(bannerIndex) || bannerIndex < 1 || bannerIndex > 5) {
         return res
