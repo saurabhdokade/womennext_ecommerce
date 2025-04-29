@@ -59,6 +59,7 @@ const addReview = async (req, res) => {
 //✅ Get All Reviews
 const getAllReviews = async (req, res) => {
     try {
+
         let { page = 1, limit = 10 } = req.query;
         page = parseInt(page);
         limit = parseInt(limit);
@@ -71,8 +72,7 @@ const getAllReviews = async (req, res) => {
                 .skip(skip)
                 .limit(limit),
             reviewModel.countDocuments(),
-        ]);
-
+        ]
         const formattedReviews = reviews.map(
             ({ _doc: { createdAt, ...rest } }) => ({
                 ...rest,
