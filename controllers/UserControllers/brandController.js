@@ -34,7 +34,7 @@ const createBrand = async(req, res)=>{
 //✅ get All Brands
 const getAllBrands = async(req, res)=>{
     try {
-        const brands=await BrandModel.find().select("-_id")
+        const brands=await BrandModel.find().select("-_id");
         return res.status(200).json({
             success:true,
             message:"Brands fetched successfully",

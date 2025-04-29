@@ -3,30 +3,38 @@ const ProductModel = require("../../models/SuperAdminModels/Product");
 //✅ Get All Products
 const getAllProducts = async (req, res) => {
     try {
-        const products = await ProductModel.find(
-            {},
-            "image productName price quantityInEachPack"
-        );
- 
-        // Extract only the first image from the image array
-        const formattedProducts = products.map((product) => ({
-            _id: product._id,
-            image: product.image.length > 0 ? product.image[0] : null, // Return first image or null
-            productName: product.productName,
-            price: product.price,
-            quantityInEachPack: product.quantityInEachPack,
-        }));
- 
-        res.status(200).json({
-            success: true,
-            totalProducts: formattedProducts.length,
-            products: formattedProducts,
-        });
+      const { brand } = req.query; // ?brand=whisper
+  
+      const filter = brand ? { brand } : {}; // if brand is present, filter by it
+  
+      const products = await ProductModel.find(
+        filter,
+        "image productName price quantityInEachPack brand"
+      );
+  
+      const formattedProducts = products.map((product) => ({
+        _id: product._id,
+        image: product.image.length > 0 ? product.image[0] : null,
+        productName: product.productName,
+        price: product.price,
+        quantityInEachPack: product.quantityInEachPack,
+        brand: product.brand,
+      }));
+  
+      res.status(200).json({
+        success: true,
+        totalProducts: formattedProducts.length,
+        products: formattedProducts,
+      });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ success: false, message: error.message });
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
     }
-};
+  };
+  
  
 //✅ Get Product by ID
 const getProductById = async (req, res) => {
