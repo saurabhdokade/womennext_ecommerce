@@ -50,6 +50,7 @@ const contactRoutes = require("./routes/user-Routes/conatctUs-Routes");
 const reviewRoutes = require("./routes/user-Routes/reviewRoutes");
 const userSettingsRoutes = require("./routes/user-Routes/userSettingsRoutes");
 const userNotificationsRoutes = require("./routes/user-Routes/userNotficationsRoutes");
+const brandRoutes = require("./routes/user-Routes/brandRoutes");
 
 
 //✅ Importing All Delivery Boy Routes
@@ -103,6 +104,7 @@ app.use("/api/user", contactRoutes);
 app.use("/api/user/review", reviewRoutes);
 app.use("/api/user/settings", userSettingsRoutes);
 app.use("/api/user/notification", userNotificationsRoutes);
+app.use("/api/user/brand", brandRoutes);
 
 //✅ Delivery Boy Routes
 app.use("/api/deliveryBoy", deliveryBoyModelRoutes);
