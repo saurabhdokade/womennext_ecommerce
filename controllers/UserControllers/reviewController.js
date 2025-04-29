@@ -72,7 +72,7 @@ const getAllReviews = async (req, res) => {
                 .skip(skip)
                 .limit(limit),
             reviewModel.countDocuments(),
-        ]
+        ]);
         const formattedReviews = reviews.map(
             ({ _doc: { createdAt, ...rest } }) => ({
                 ...rest,
