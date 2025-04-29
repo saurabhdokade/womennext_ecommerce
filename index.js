@@ -6,7 +6,7 @@ const cors = require("cors");
 
 
 //✅ Importing All superAdmin Related Routes
-const superAdminRoutes = require("./routes/SuperAdmin-Routes/Super-AdminRoutes"); 
+const superAdminRoutes = require("./routes/SuperAdmin-Routes/Super-AdminRoutes");
 const branchRoutes = require("./routes/SuperAdmin-Routes/branchRoutes");
 const deliveryBoyRoutes = require("./routes/SuperAdmin-Routes/deliveryRoutes");
 const bannerRoutes = require("./routes/SuperAdmin-Routes/bannerRoutes");
@@ -50,6 +50,7 @@ const contactRoutes = require("./routes/user-Routes/conatctUs-Routes");
 const reviewRoutes = require("./routes/user-Routes/reviewRoutes");
 const userSettingsRoutes = require("./routes/user-Routes/userSettingsRoutes");
 const userNotificationsRoutes = require("./routes/user-Routes/userNotficationsRoutes");
+const userBannerRoutes = require("./routes/user-Routes/userBannerRoutes");
 
 
 //✅ Importing All Delivery Boy Routes
@@ -69,7 +70,7 @@ connectDB();
 
 
 //✅ Super Admin  Routes
-app.use("/api/superAdmin",superAdminRoutes);
+app.use("/api/superAdmin", superAdminRoutes);
 app.use("/api/branch", branchRoutes);
 app.use("/api/deliveryBoy", deliveryBoyRoutes);
 app.use("/api/banner", bannerRoutes);
@@ -103,6 +104,7 @@ app.use("/api/user", contactRoutes);
 app.use("/api/user/review", reviewRoutes);
 app.use("/api/user/settings", userSettingsRoutes);
 app.use("/api/user/notification", userNotificationsRoutes);
+app.use("/api/user/banner", userBannerRoutes);
 
 //✅ Delivery Boy Routes
 app.use("/api/deliveryBoy", deliveryBoyModelRoutes);
