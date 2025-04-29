@@ -115,10 +115,20 @@ const getTestimonialById = async (req, res) => {
 const updateTestimonial = async (req, res) => {
   try {
     const { name, subtitle, feedback, status } = req.body;
+
     let imagePaths = [];
 
     if (req.files && req.files.length > 0) {
       imagePaths = req.files.map((file) => file.path);
+    }
+
+    // Fetch existing testimonial
+    const existingTestimonial = await Testimonial.findById(req.params.id);
+    if (!existingTestimonial) {
+      return res.status(404).json({
+        success: false,
+        message: "Testimonial not found",
+      });
     }
 
     const updatedTestimonial = await Testimonial.findByIdAndUpdate(
@@ -126,19 +136,12 @@ const updateTestimonial = async (req, res) => {
       {
         name,
         subtitle,
-        image: imagePaths.length > 0 ? imagePaths : undefined,
+        image: imagePaths.length > 0 ? imagePaths : existingTestimonial.image,
         feedback,
         status,
       },
       { new: true, runValidators: true }
     );
-
-    if (!updatedTestimonial) {
-      return res.status(404).json({
-        success: false,
-        message: "Testimonial not found",
-      });
-    }
 
     res.status(200).json({
       success: true,
@@ -153,6 +156,7 @@ const updateTestimonial = async (req, res) => {
     });
   }
 };
+
 
 //✅ Delete a testimonial by ID
 const deleteTestimonial = async (req, res) => {

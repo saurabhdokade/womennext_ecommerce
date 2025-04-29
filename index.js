@@ -51,6 +51,7 @@ const reviewRoutes = require("./routes/user-Routes/reviewRoutes");
 const userSettingsRoutes = require("./routes/user-Routes/userSettingsRoutes");
 const userNotificationsRoutes = require("./routes/user-Routes/userNotficationsRoutes");
 const userBannerRoutes = require("./routes/user-Routes/userBannerRoutes");
+const brandRoutes = require("./routes/user-Routes/brandRoutes")
 
 
 //✅ Importing All Delivery Boy Routes
@@ -105,6 +106,7 @@ app.use("/api/user/review", reviewRoutes);
 app.use("/api/user/settings", userSettingsRoutes);
 app.use("/api/user/notification", userNotificationsRoutes);
 app.use("/api/user/banner", userBannerRoutes);
+app.use("/api/user/brand", brandRoutes);
 
 //✅ Delivery Boy Routes
 app.use("/api/deliveryBoy", deliveryBoyModelRoutes);
