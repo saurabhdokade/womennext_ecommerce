@@ -3,9 +3,20 @@ const ProductModel = require("../../models/SuperAdminModels/Product");
 //✅ Get All Products
 const getAllProducts = async (req, res) => {
     try {
-      const { brand } = req.query; // ?brand=whisper
+      const { brand } = req.query; 
   
-      const filter = brand ? { brand } : {}; // if brand is present, filter by it
+
+      const allowedBrands = ["whisper", "Stayfree", "Sofy", "always", "natracare"];
+
+      // Check if brand is provided and is valid
+      if (brand && !allowedBrands.includes(brand)) {
+        return res.status(400).json({
+          success: false,
+          message: `The brand '${brand}' is not valid. Please use one of the following valid brands: ${allowedBrands.join(", ")}.`
+        });
+      }
+  
+      const filter = brand ? { brand } : {}; 
   
       const products = await ProductModel.find(
         filter,
