@@ -28,7 +28,10 @@ const register = async (req, res) => {
         .json({ success: false, message: "Invalid mobile number format." });
     }
 
-    const existingUser = await userModel.exists({ phoneNumber: mobileNumber });
+    const existingUser = await userModel.exists({
+      phoneNumber: mobileNumber,
+      isVerified: true,
+    });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -39,20 +42,29 @@ const register = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
-
-
-    const newUser = new userModel({
-      fullName,
-      gender,
+    const notVerifiedUser = await userModel.findOne({
       phoneNumber: mobileNumber,
-      address,
-      otp,
-      otpExpiresAt,
+      isVerified: false,
     });
+    if (notVerifiedUser) {
+      await userModel.findOneAndUpdate(
+        { phoneNumber: mobileNumber },
+        { otp, otpExpiresAt, fullName, gender, address },
+      );
+    }
+    else{
+      const newUser = new userModel({
+        fullName,
+        gender,
+        phoneNumber: mobileNumber,
+        address,
+        otp,
+        otpExpiresAt,
+      });
+      await newUser.save();
+    }
 
-    await newUser.save();
-
-    res.status(201).json({
+   return res.status(201).json({
       success: true,
       message: "OTP sent successfully.",
       data: { otp },
@@ -101,7 +113,7 @@ const login = async (req, res) => {
     user.otpExpiresAt = otpExpiresAt;
     await user.save();
 
-  return res
+    return res
       .status(200)
       .json({ message: "OTP sent successfully", success: true, data: { otp } });
   } catch (error) {
