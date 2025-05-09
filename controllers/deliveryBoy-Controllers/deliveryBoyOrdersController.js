@@ -300,6 +300,7 @@ const canceldeliveryBoyOrder = async (req, res) => {
         order.paymentStatus = "Success";
         order.status = "Delivered";
         order.deliveryStatus = "Delivered";
+        order.deliveryDate = new Date(); // <-- add this line
         await order.save();
         const userNotification = new userNotificationModel({
           userId: order.user._id,

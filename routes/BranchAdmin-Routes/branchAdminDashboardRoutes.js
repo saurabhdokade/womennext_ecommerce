@@ -11,7 +11,7 @@ router.get("/totalOrderCount", branchAdminAuthMiddleware, getAllOrders);
 router.get("/delivered-income",branchAdminAuthMiddleware, getAllOrdersDeliveredIncome);
 router.get('/totalProductCount',branchAdminAuthMiddleware, getProductCount);
 router.get("/top-sellingBrands", getTopSellingBrands);
-router.get("/recent-orders", getRecentOrders);
+router.get("/recent-orders", branchAdminAuthMiddleware,getRecentOrders);
 
  
 

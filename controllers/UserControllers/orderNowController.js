@@ -8,25 +8,61 @@ const getOrderById = async (req, res) => {
     const { orderId } = req.params;
     const userId = req.user.id;
 
+    // Validate orderId
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ message: "Invalid order ID." });
+    }
+
+    // Fetch the order with population
     const order = await Order.findOne({ _id: orderId, user: userId })
-      .populate("items.product", "name price imageUrl")
-      .populate("user", "name email");
+      .select("-tracking")
+      .populate("items.product", "productName image")
+      .populate("user", "fullName address");
 
     if (!order) {
       return res.status(404).json({ message: "Order not found." });
     }
 
-    // Convert Mongoose document to plain object & remove unwanted fields
-    const {
-      otherReason,
-      cancelledBy,
-      cancelDate,
-      ...filteredOrder
-    } = order.toObject();
+    // Emergency fee calculation
+    let emergencyFee = 0;
+    if (order.emergencyDelivery) {
+      const feeRecord = await EmergencyFeeModel.findOne().sort({ createdAt: -1 });
+      if (feeRecord) {
+        emergencyFee = feeRecord.feeAmount;
+      }
+    }
+
+    // Create response object
+    const orderDetails = {
+      id: order._id,
+      items: order.items.map((item) => ({
+        productName: item.product?.productName || "Product Name Missing",
+        productImage: item.product?.image?.[0] || "No Image Available",
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      orderPlacedOn: new Date(order.orderDate).toLocaleDateString('en-GB'),
+      orderDeliveredOn: order.deliveryDate
+        ? new Date(order.deliveryDate).toLocaleDateString('en-GB')
+        : "Pending",
+      orderNumber: order._id,
+      shippingAddress: order.user?.address || "N/A",
+      paymentMethod: order.paymentMethod || "Cash on Delivery",
+      emergencyDelivery: order.emergencyDelivery,
+      orderSummary: {
+        price: order.totalAmount - emergencyFee,
+        discount: 0,
+        coupons: 0,
+        deliveryCharges: emergencyFee,
+        tax: 0,
+        totalAmount: order.totalAmount,
+      },
+    };
 
     return res.status(200).json({
       message: "Order details retrieved successfully",
-      order: filteredOrder,
+      success: true,
+      order: orderDetails,
     });
   } catch (error) {
     console.error("Server Error:", error);
@@ -128,55 +164,97 @@ const cancelOrder = async (req, res) => {
 };
 
 
-//✅ Get User Orders
+// //✅ Get User Orders
+// const getUserOrders = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+
+//     const orders = await Order.find({ user: userId }).populate("items.product");
+
+//     if (!orders || orders.length === 0) {
+//       return res.status(404).json({ message: "No orders found." });
+//     }
+
+//     // Remove tracking from all orders
+//     const sanitizedOrders = orders.map((order) => {
+//       const orderObj = order.toObject();
+//       // Remove null fields
+//       if (orderObj.otherReason === null) delete orderObj.otherReason;
+//       if (orderObj.cancelledBy === null) delete orderObj.cancelledBy;
+//       if (orderObj.cancelDate === null) delete orderObj.cancelDate;
+//       return orderObj;
+//     });
+
+//     // Categorize orders
+//     const confirmedOrders = sanitizedOrders.filter(
+//       (order) => order.status === "Confirmed"
+//     );
+//     const deliveredOrders = sanitizedOrders.filter(
+//       (order) => order.status === "Delivered"
+//     );
+//     const ongoingOrders = sanitizedOrders.filter(
+//       (order) => order.status === "In "
+//     );
+//     const cancelledOrders = sanitizedOrders.filter(
+//       (order) => order.status === "Cancelled"
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       orders: {
+//         confirmed: confirmedOrders,
+//         delivered: deliveredOrders,
+//         ongoing: ongoingOrders,
+//         cancelled: cancelledOrders,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching orders:", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
 const getUserOrders = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const orders = await Order.find({ user: userId }).populate("items.product");
+    // Get only delivered orders for the user
+    const deliveredOrders = await Order.find({ user: userId, status: "Delivered" })
+      .populate({
+        path: "items.product",
+        select: "productName image",
+      });
 
-    if (!orders || orders.length === 0) {
-      return res.status(404).json({ message: "No orders found." });
+    if (!deliveredOrders || deliveredOrders.length === 0) {
+      return res.status(404).json({ success: false, message: "No delivered orders found." });
     }
 
-    // Remove tracking from all orders
-    const sanitizedOrders = orders.map((order) => {
-      const orderObj = order.toObject();
-      // Remove null fields
-      if (orderObj.otherReason === null) delete orderObj.otherReason;
-      if (orderObj.cancelledBy === null) delete orderObj.cancelledBy;
-      if (orderObj.cancelDate === null) delete orderObj.cancelDate;
-      return orderObj;
-    });
-
-    // Categorize orders
-    const confirmedOrders = sanitizedOrders.filter(
-      (order) => order.status === "Confirmed"
-    );
-    const deliveredOrders = sanitizedOrders.filter(
-      (order) => order.status === "Delivered"
-    );
-    const ongoingOrders = sanitizedOrders.filter(
-      (order) => order.status === "In "
-    );
-    const cancelledOrders = sanitizedOrders.filter(
-      (order) => order.status === "Cancelled"
-    );
+    // Format each order for the frontend
+    const formattedOrders = deliveredOrders.map((order) => ({
+      orderId: order._id,
+      orderDate: new Date(order.orderDate).toLocaleDateString('en-GB'),
+      deliveryDate: order.deliveryDate
+        ? new Date(order.deliveryDate).toLocaleDateString('en-GB')
+        : "Pending",
+      items: order.items.map((item) => ({
+        quantityInEachPack: item.product?.quantityInEachPack || 1,
+        productName: item.product?.productName || "Product Name Missing",
+        productImage: item.product?.image?.[0] || "No Image Available",
+        quantity: item.quantity,
+        price: item.price,
+      })),
+    }));
 
     res.status(200).json({
       success: true,
-      orders: {
-        confirmed: confirmedOrders,
-        delivered: deliveredOrders,
-        ongoing: ongoingOrders,
-        cancelled: cancelledOrders,
-      },
+      message: "Delivered orders retrieved successfully",
+      deliveredOrders: formattedOrders,
     });
   } catch (error) {
-    console.error("Error fetching orders:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Error fetching delivered orders:", error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
+
 
 //✅ Get View Order Details
  
@@ -195,7 +273,7 @@ const getViewOrderDetails = async (req, res) => {
       .select("-tracking")
       .populate({
         path: "items.product",
-        select: "productName image",
+        select: "productName image quantityInEachPack",
       })
       .populate("user", "fullName address");
  
@@ -220,13 +298,14 @@ const getViewOrderDetails = async (req, res) => {
       order: {
         id: order._id,
         items: order.items.map((item) => ({
+          quantityInEachPack : item.product?.quantityInEachPack || 1,
           productName: item.product?.productName || "Product Name Missing",
           productImage: item.product?.image?.[0] || "No Image Available",
           quantity: item.quantity,
           price: item.price,
         })),
         orderPlacedOn: new Date(order.orderDate).toLocaleDateString('en-GB'),
-        orderDeliveredOn: order.deliveryDate || "Pending",
+        orderDeliveredOn: new Date(order.orderDate).toLocaleDateString('en-GB')|| "Pending",
         orderNumber: order._id,
         shippingAddress: order.user?.address || "N/A",
         paymentMethod: order.paymentMethod || "Cash on Delivery",

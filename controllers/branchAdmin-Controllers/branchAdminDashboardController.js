@@ -11,12 +11,10 @@ const getAllDelieveryBoys = async (req, res) => {
   try {
     const branch = req.branchAdmin.branch;
 
-    // Fetch all delivery boys belonging to the same branch
     const deliveryBoys = await Delivery.find({ branch: branch });
 
     const totalDeliveryBoys = deliveryBoys.length;
 
-    // Filter delivery boys created this month
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
@@ -38,7 +36,7 @@ const getAllDelieveryBoys = async (req, res) => {
       totalDeliveryBoys,
       thisMonthDeliveryBoys,
       changePercent,
-      deliveryBoys,  // ✅ Sending full list of delivery boys
+      // deliveryBoys,  
     });
   } catch (error) {
     console.error(error);
@@ -325,31 +323,193 @@ const getTopSellingBrands = async (req, res) => {
 };
  
  
-//✅ Get Recent Orders
+// //✅ Get Recent Orders
+// const getRecentOrders = async (req, res) => {
+//   try {
+//     const branchName = req.query.branchName?.trim();
+
+//     const branch = await branchModel.findOne({ branchName });
+//     if (!branch) {
+//       return res.status(404).json({
+//         success: false,
+//         message: `Branch with name "${branchName}" not found.`,
+//       });
+//     }
+
+//     const allOrders = await Order.find({ branchInfo: branch._id })
+//       .populate("user", "name email")
+//       .populate("items.product", "productName")
+//       .populate("branchInfo", "branchName");
+
+//     const now = new Date();
+//     const currentMonth = now.getMonth(); 
+//     const currentYear = now.getFullYear();
+
+//     let totalSalesThisMonth = 0;
+//     let totalSalesLastMonth = 0;
+
+//     const formattedOrders = [];
+
+//     for (const order of allOrders) {
+//       const orderDate = new Date(order.createdAt);
+//       const orderMonth = orderDate.getMonth();
+//       const orderYear = orderDate.getFullYear();
+
+//       for (const item of order.items) {
+//         const orderAmount = item.price * item.quantity;
+
+//         // **Summation Logic** for current and last month
+//         if (orderMonth === currentMonth && orderYear === currentYear) {
+//           totalSalesThisMonth += orderAmount;
+//         } else if (
+//           (orderMonth === (currentMonth - 1) && orderYear === currentYear) || 
+//           (currentMonth === 0 && orderMonth === 11 && orderYear === currentYear - 1)
+//         ) {
+//           // Handle January correctly
+//           totalSalesLastMonth += orderAmount;
+//         }
+
+//         formattedOrders.push({
+//           productName: item.product?.productName || "N/A",
+//           totalOrder: item.quantity,
+//           status: order.status || "Pending",
+//           totalAmount: `₹${orderAmount.toFixed(2)}`,
+//           orderDate: order.createdAt,
+//         });
+//       }
+//     }
+
+//     let percentageChange = 0;
+//     if (totalSalesLastMonth > 0) {
+//       percentageChange = ((totalSalesThisMonth - totalSalesLastMonth) / totalSalesLastMonth) * 100;
+//     }
+
+//     const recentOrders = formattedOrders
+//       .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+//       .slice(0, 10);
+
+//     res.status(200).json({
+//       success: true,
+//       branch: branchName,
+//       totalSalesThisMonth: `₹${totalSalesThisMonth.toFixed(2)}`,
+//       change: `${percentageChange.toFixed(2)}%`,
+//       recentOrders,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching formatted recent orders:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error while formatting recent orders",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
+// const getRecentOrders = async (req, res) => {
+//   try {
+//     // Extract branch ID from logged-in branch admin
+//     const branchId = req.branchAdmin.branch;
+
+//     const branch = await branchModel.findById(branchId);
+//     if (!branch) {
+//       return res.status(404).json({
+//         success: false,
+//         message: `Branch not found.`,
+//       });
+//     }
+
+//     const allOrders = await Order.find({ branchInfo: branch._id })
+//       .populate("user", "name email")
+//       .populate("items.product", "productName")
+//       .populate("branchInfo", "branchName");
+
+//     const now = new Date();
+//     const currentMonth = now.getMonth();
+//     const currentYear = now.getFullYear();
+
+//     let totalSalesThisMonth = 0;
+//     let totalSalesLastMonth = 0;
+//     const formattedOrders = [];
+
+//     for (const order of allOrders) {
+//       const orderDate = new Date(order.createdAt);
+//       const orderMonth = orderDate.getMonth();
+//       const orderYear = orderDate.getFullYear();
+
+//       for (const item of order.items) {
+//         const orderAmount = item.price * item.quantity;
+
+//         if (orderMonth === currentMonth && orderYear === currentYear) {
+//           totalSalesThisMonth += orderAmount;
+//         } else if (
+//           (orderMonth === (currentMonth - 1) && orderYear === currentYear) ||
+//           (currentMonth === 0 && orderMonth === 11 && orderYear === currentYear - 1)
+//         ) {
+//           totalSalesLastMonth += orderAmount;
+//         }
+
+//         formattedOrders.push({
+//           productName: item.product?.productName || "N/A",
+//           totalOrder: item.quantity,
+//           status: order.status || "Pending",
+//           totalAmount: `₹${orderAmount.toFixed(2)}`,
+//           orderDate: order.createdAt,
+//         });
+//       }
+//     }
+
+//     let percentageChange = 0;
+//     if (totalSalesLastMonth > 0) {
+//       percentageChange = ((totalSalesThisMonth - totalSalesLastMonth) / totalSalesLastMonth) * 100;
+//     }
+
+//     const recentOrders = formattedOrders
+//       .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+//       .slice(0, 10);
+
+//     res.status(200).json({
+//       success: true,
+//       branch: branch.branchName,
+//       totalSalesThisMonth: `₹${totalSalesThisMonth.toFixed(2)}`,
+//       change: `${percentageChange.toFixed(2)}%`,
+//       recentOrders,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching formatted recent orders:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error while formatting recent orders",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 const getRecentOrders = async (req, res) => {
   try {
-    const branchName = req.query.branchName?.trim();
+    const branchId = req.branchAdmin.branch;
 
-    const branch = await branchModel.findOne({ branchName });
+    const branch = await branchModel.findById(branchId);
     if (!branch) {
       return res.status(404).json({
         success: false,
-        message: `Branch with name "${branchName}" not found.`,
+        message: "Branch not found",
       });
     }
 
     const allOrders = await Order.find({ branchInfo: branch._id })
-      .populate("user", "name email")
-      .populate("items.product", "productName")
-      .populate("branchInfo", "branchName");
+      .populate("user", "name email") 
+      .populate("items.product", "productName") 
+      .populate("branchInfo", "branchName"); 
 
     const now = new Date();
-    const currentMonth = now.getMonth(); 
+    const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
     let totalSalesThisMonth = 0;
     let totalSalesLastMonth = 0;
-
     const formattedOrders = [];
 
     for (const order of allOrders) {
@@ -360,14 +520,14 @@ const getRecentOrders = async (req, res) => {
       for (const item of order.items) {
         const orderAmount = item.price * item.quantity;
 
-        // **Summation Logic** for current and last month
         if (orderMonth === currentMonth && orderYear === currentYear) {
           totalSalesThisMonth += orderAmount;
-        } else if (
-          (orderMonth === (currentMonth - 1) && orderYear === currentYear) || 
+        }
+
+        if (
+          (orderMonth === currentMonth - 1 && orderYear === currentYear) ||
           (currentMonth === 0 && orderMonth === 11 && orderYear === currentYear - 1)
         ) {
-          // Handle January correctly
           totalSalesLastMonth += orderAmount;
         }
 
@@ -376,7 +536,7 @@ const getRecentOrders = async (req, res) => {
           totalOrder: item.quantity,
           status: order.status || "Pending",
           totalAmount: `₹${orderAmount.toFixed(2)}`,
-          orderDate: order.createdAt,
+          // orderDate: order.createdAt,
         });
       }
     }
@@ -392,23 +552,21 @@ const getRecentOrders = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      branch: branchName,
-      totalSalesThisMonth: `₹${totalSalesThisMonth.toFixed(2)}`,
-      change: `${percentageChange.toFixed(2)}%`,
+      // branch: branch.branchName,
+      // totalSalesThisMonth: `₹${totalSalesThisMonth.toFixed(2)}`,
+      // change: `${percentageChange.toFixed(2)}%`,
       recentOrders,
     });
+
   } catch (error) {
-    console.error("Error fetching formatted recent orders:", error);
+    console.error("Error fetching recent orders:", error);
     res.status(500).json({
       success: false,
-      message: "Server error while formatting recent orders",
+      message: "Server error while fetching recent orders",
       error: error.message,
     });
   }
 };
-
-
-
 
 
  

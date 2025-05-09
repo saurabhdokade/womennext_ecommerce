@@ -67,12 +67,45 @@ const addToCart = async (req, res) => {
 };
 
 //✅ Get All Cart
+// const getCart = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+ 
+//     const cart = await Cart.findOne({ userId }).populate("items.productId");
+ 
+//     if (!cart || cart.items.length === 0) {
+//       return res.status(200).json({
+//         success: true,
+//         message: "Cart is empty",
+//         cart: {
+//           items: [],
+//           totalAmount: 0,
+//         },
+//       });
+//     }
+ 
+//     return res.status(200).json({
+//       success: true,
+//       message: "Cart fetched successfully",
+//       cart,
+//     });
+//   } catch (error) {
+//     console.error("Get cart error:", error);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Server Error", error: error.message });
+//   }
+// };
+
 const getCart = async (req, res) => {
   try {
     const userId = req.user.id;
- 
-    const cart = await Cart.findOne({ userId }).populate("items.productId");
- 
+
+    const cart = await Cart.findOne({ userId }).populate({
+      path: "items.productId",
+      select: "image productName quantityInEachPack size price"
+    });
+
     if (!cart || cart.items.length === 0) {
       return res.status(200).json({
         success: true,
@@ -83,7 +116,7 @@ const getCart = async (req, res) => {
         },
       });
     }
- 
+
     return res.status(200).json({
       success: true,
       message: "Cart fetched successfully",
@@ -91,13 +124,80 @@ const getCart = async (req, res) => {
     });
   } catch (error) {
     console.error("Get cart error:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server Error", error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
   }
 };
 
+// const getCartItemCount = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+
+//     const cart = await Cart.findOne({ userId });
+
+//     if (!cart || cart.items.length === 0) {
+//       return res.status(200).json({
+//         success: true,
+//         count: 0,
+//         message: "Cart is empty"
+//       });
+//     }
+
+//     const totalCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+
+//     return res.status(200).json({
+//       success: true,
+//       count: totalCount,
+//       message: "Cart item count fetched successfully"
+//     });
+//   } catch (error) {
+//     console.error("Cart count error:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Server Error",
+//       error: error.message
+//     });
+//   }
+// };
+
+
 //✅ Increment Quantity
+
+const getCartItemCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const cart = await Cart.findOne({ userId });
+
+    if (!cart || cart.items.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        message: "Cart is empty"
+      });
+    }
+
+    const distinctItemCount = cart.items.length;
+
+    return res.status(200).json({
+      success: true,
+      count: distinctItemCount,
+      message: "Distinct cart item count fetched successfully"
+    });
+  } catch (error) {
+    console.error("Cart count error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+
+
 const incrementCartItem = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -394,6 +494,7 @@ const BuyOrderFromCart = async (req, res) => {
       order: {
         user: newOrder.user,
         orderId: newOrder.orderId,
+        _id: newOrder._id,
         deliveryAddress: newOrder.deliveryAddress,
         paymentMethod: newOrder.paymentMethod,
         emergencyDelivery: newOrder.emergencyDelivery,
@@ -420,6 +521,341 @@ const BuyOrderFromCart = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// //buynow 
+// const BuyNow = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const {  emergencyDelivery, deliveryAddress, paymentMethod } = req.body;
+//     const productId = req.params.productId;
+
+//     // if (!productId || !quantity || quantity <= 0) {
+//     //   return res.status(400).json({ message: "Invalid product or quantity." });
+//     // }
+
+//     const product = await Product.findById(productId);
+//     if (!product) {
+//       return res.status(404).json({ message: "Product not found." });
+//     }
+
+//     const userAddress = req.user.address;
+//     const pinCodeMatch = userAddress.match(/\b\d{6}\b/);
+//     const userPinCode = pinCodeMatch ? pinCodeMatch[0] : null;
+
+//     if (!userPinCode) {
+//       return res.status(400).json({ message: "No valid 6-digit PIN code found in your address." });
+//     }
+
+//     const matchedBranch = await branchModel.findOne({ servicePinCode: userPinCode });
+//     if (!matchedBranch) {
+//       return res.status(404).json({ message: "No branch found matching your PIN code." });
+//     }
+
+//     const branchAdmin = await BranchAdmin.findOne({ branch: matchedBranch._id });
+//     if (!branchAdmin) {
+//       return res.status(404).json({ message: "No branch admin found for this branch." });
+//     }
+
+//     const BranchProduct = require("../../models/BranchAdminModels/branchAdminProducts");
+//     const branchProduct = await BranchProduct.findOne({
+//       branch: matchedBranch._id,
+//       product: productId,
+//     });
+
+//     if (!branchProduct || branchProduct.quantity < quantity || product.stock < quantity) {
+//       return res.status(400).json({ message: "Insufficient stock available." });
+//     }
+
+//     let totalAmount = quantity * product.price;
+//     let emergencyFee = 0;
+//     const emergency = emergencyDelivery === "true";
+
+//     if (emergency) {
+//       const feeDoc = await EmergencyFeeModel.findOne().sort({ createdAt: -1 });
+//       emergencyFee = feeDoc?.feeAmount || 0;
+//       totalAmount += emergencyFee;
+//     }
+
+//     // Generate unique orderId
+//     const generateUniqueOrderId = async () => {
+//       const prefix = "ORD000";
+//       let nextNumber = 1;
+//       const latestOrder = await Order.findOne({ orderId: { $regex: `^${prefix}` } })
+//         .sort({ createdAt: -1 })
+//         .lean();
+
+//       if (latestOrder) {
+//         const lastId = latestOrder.orderId.replace(prefix, "");
+//         const parsed = parseInt(lastId);
+//         if (!isNaN(parsed)) {
+//           nextNumber = parsed + 1;
+//         }
+//       }
+
+//       let newOrderId;
+//       let exists = true;
+//       while (exists) {
+//         newOrderId = prefix + nextNumber.toString().padStart(1, "0");
+//         const existingOrder = await Order.findOne({ orderId: newOrderId });
+//         if (!existingOrder) exists = false;
+//         else nextNumber++;
+//       }
+
+//       return newOrderId;
+//     };
+
+//     const orderId = await generateUniqueOrderId();
+
+//     const orderItems = [{
+//       product: productId,
+//       quantity,
+//       price: product.price,
+//     }];
+
+//     const newOrder = new Order({
+//       user: userId,
+//       orderId,
+//       deliveryAddress,
+//       paymentMethod,
+//       totalAmount,
+//       items: orderItems,
+//       emergencyDelivery: emergency,
+//       branchInfo: matchedBranch._id,
+//     });
+
+//     await newOrder.save();
+
+//     // Update stock
+//     product.stock -= quantity;
+//     await product.save();
+
+//     branchProduct.quantity -= quantity;
+//     await branchProduct.save();
+
+//     // Notifications
+//     const populatedOrder = await Order.findById(newOrder._id).populate("user", "fullName image");
+
+//     const branchNotification = new branchAdminNotificationModel({
+//       branchAdminId: branchAdmin._id,
+//       title: "New Direct Order",
+//       message: `Order #${orderId} placed directly.`,
+//       isRead: false,
+//       createdAt: new Date(),
+//       id: populatedOrder.user._id,
+//       fullName: populatedOrder.user.fullName || "Unknown",
+//       image: populatedOrder.user.image || "",
+//     });
+//     await branchNotification.save();
+
+//     const userNotification = new userNotificationModel({
+//       userId,
+//       title: "Order Placed",
+//       message: "Your direct order has been placed successfully",
+//       image: product.image?.[0] || "",
+//     });
+//     await userNotification.save();
+
+//     // Response
+//     return res.status(201).json({
+//       message: "Order placed successfully via Buy Now",
+//       branchId: matchedBranch._id,
+//       branchAdminId: branchAdmin._id,
+//       order: {
+//         user: newOrder.user,
+//         orderId: newOrder.orderId,
+//         deliveryAddress: newOrder.deliveryAddress,
+//         paymentMethod: newOrder.paymentMethod,
+//         emergencyDelivery: newOrder.emergencyDelivery,
+//         items: newOrder.items,
+//         branchInfo: newOrder.branchInfo,
+//         createdAt: newOrder.createdAt,
+//         updatedAt: newOrder.updatedAt,
+//       },
+//       emergencyDelivery: emergency
+//         ? `₹${emergencyFee} Emergency Delivery Charges applied`
+//         : "No Emergency Delivery Charges",
+//       orderSummary: {
+//         productImage: product.image?.[0] || "",
+//         items: 1,
+//         itemTotal: totalAmount - emergencyFee,
+//         deliveryCharges: emergencyFee,
+//         orderTotal: totalAmount,
+//       },
+//     });
+
+//   } catch (error) {
+//     console.error("Buy Now Error:", error);
+//     return res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
+const BuyNow = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { emergencyDelivery, deliveryAddress, paymentMode } = req.body;
+    const productId = req.params.productId;
+    const quantity = Number(req.body.quantity) || 1;
+
+    if (!productId || quantity <= 0) {
+      return res.status(400).json({ message: "Invalid product or quantity." });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    const userAddress = req.user.address;
+    const pinCodeMatch = userAddress.match(/\b\d{6}\b/);
+    const userPinCode = pinCodeMatch ? pinCodeMatch[0] : null;
+
+    if (!userPinCode) {
+      return res.status(400).json({ message: "No valid 6-digit PIN code found in your address." });
+    }
+
+    const matchedBranch = await branchModel.findOne({ servicePinCode: userPinCode });
+    if (!matchedBranch) {
+      return res.status(404).json({ message: "No branch found matching your PIN code." });
+    }
+
+    const branchAdmin = await BranchAdmin.findOne({ branch: matchedBranch._id });
+    if (!branchAdmin) {
+      return res.status(404).json({ message: "No branch admin found for this branch." });
+    }
+
+    const BranchProduct = require("../../models/BranchAdminModels/branchAdminProducts");
+    const branchProduct = await BranchProduct.findOne({
+      branch: matchedBranch._id,
+      product: productId,
+    });
+
+    if (!branchProduct || branchProduct.quantity < quantity || product.stock < quantity) {
+      return res.status(400).json({ message: "Insufficient stock available." });
+    }
+
+    let totalAmount = quantity * product.price;
+    let emergencyFee = 0;
+    const emergency = emergencyDelivery === "true";
+
+    if (emergency) {
+      const feeDoc = await EmergencyFeeModel.findOne().sort({ createdAt: -1 });
+      emergencyFee = feeDoc?.feeAmount || 0;
+      totalAmount += emergencyFee;
+    }
+
+    // Generate unique orderId
+    const generateUniqueOrderId = async () => {
+      const prefix = "ORD000";
+      let nextNumber = 1;
+      const latestOrder = await Order.findOne({ orderId: { $regex: `^${prefix}` } })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      if (latestOrder) {
+        const lastId = latestOrder.orderId.replace(prefix, "");
+        const parsed = parseInt(lastId);
+        if (!isNaN(parsed)) {
+          nextNumber = parsed + 1;
+        }
+      }
+
+      let newOrderId;
+      let exists = true;
+      while (exists) {
+        newOrderId = prefix + nextNumber.toString().padStart(1, "0");
+        const existingOrder = await Order.findOne({ orderId: newOrderId });
+        if (!existingOrder) exists = false;
+        else nextNumber++;
+      }
+
+      return newOrderId;
+    };
+
+    const orderId = await generateUniqueOrderId();
+
+    const orderItems = [{
+      product: productId,
+      quantity,
+      price: product.price,
+    }];
+
+    const newOrder = new Order({
+      user: userId,
+      orderId,
+      deliveryAddress,
+      paymentMode,
+      totalAmount,
+      items: orderItems,
+      emergencyDelivery: emergency,
+      branchInfo: matchedBranch._id,
+    });
+
+    await newOrder.save();
+
+    // Update stock
+    product.stock -= quantity;
+    await product.save();
+
+    branchProduct.quantity -= quantity;
+    await branchProduct.save();
+
+    // Notifications
+    const populatedOrder = await Order.findById(newOrder._id).populate("user", "fullName image");
+
+    const branchNotification = new branchAdminNotificationModel({
+      branchAdminId: branchAdmin._id,
+      title: "New Direct Order",
+      message: `Order #${orderId} placed directly.`,
+      isRead: false,
+      createdAt: new Date(),
+      id: populatedOrder.user._id,
+      fullName: populatedOrder.user.fullName || "Unknown",
+      image: populatedOrder.user.image || "",
+    });
+    await branchNotification.save();
+
+    const userNotification = new userNotificationModel({
+      userId,
+      title: "Order Placed",
+      message: "Your direct order has been placed successfully",
+      image: product.image?.[0] || "",
+    });
+    await userNotification.save();
+
+    // Response
+    return res.status(201).json({
+      message: "Order placed successfully via Buy Now",
+      branchId: matchedBranch._id,
+      branchAdminId: branchAdmin._id,
+      order: {
+        user: newOrder.user,
+        orderId: newOrder.orderId,
+        deliveryAddress: newOrder.deliveryAddress,
+        paymentMode: newOrder.paymentMode,
+        emergencyDelivery: newOrder.emergencyDelivery,
+        items: newOrder.items,
+        branchInfo: newOrder.branchInfo,
+        createdAt: newOrder.createdAt,
+        updatedAt: newOrder.updatedAt,
+      },
+      emergencyDelivery: emergency
+        ? `₹${emergencyFee} Emergency Delivery Charges applied`
+        : "No Emergency Delivery Charges",
+      orderSummary: {
+        productImage: product.image?.[0] || "",
+        items: 1,
+        itemTotal: totalAmount - emergencyFee,
+        deliveryCharges: emergencyFee,
+        orderTotal: totalAmount,
+      },
+    });
+
+  } catch (error) {
+    console.error("Buy Now Error:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
  
  
  
@@ -544,7 +980,9 @@ const moveToCart = async (req, res) => {
 
 module.exports = {
   addToCart,
+  getCartItemCount,
   getCart,
+  BuyNow,
   incrementCartItem,
   decrementCartItem,
   removeFromCart,

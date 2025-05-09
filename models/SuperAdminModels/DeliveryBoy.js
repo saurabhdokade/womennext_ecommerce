@@ -47,7 +47,8 @@ const deliveryBoySchema = new Schema(
             minlength: [10, "Address must be at least 10 characters long"],
         },
         branch: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Branches",
             required: [true, "Branch is required"],
             trim: true,
         },
@@ -55,11 +56,11 @@ const deliveryBoySchema = new Schema(
             type: String,
             trim: true,
         },
-        branchInfo: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Branches",
-            required: false,
-        },
+        // branchInfo: {
+        //     type: mongoose.Schema.Types.ObjectId,
+        //     ref: "Branches",
+        //     required: false,
+        // },
         isActive: {
             type: Boolean,
             default: true,

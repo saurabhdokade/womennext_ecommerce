@@ -41,7 +41,10 @@ const SuperAdminSchema = new mongoose.Schema({
   resetTokenExpiry: {
     type: Date,
   },
-  
+  isDeleted:{
+    type: Boolean,
+    default: false
+},
 }, { timestamps: true });
  
 // Mongoose Middleware: Hash password before saving
